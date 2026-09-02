@@ -1,0 +1,103 @@
+{
+  "metadata": {
+    "scenario_id": "minimal",
+    "name": "Minimal readonly fixture",
+    "timezone": "UTC"
+  },
+  "performance": [
+    {
+      "event_hour": "2026-08-26T10:00:00Z",
+      "advertiser_id": "adv-1",
+      "offer_id": "offer-a",
+      "channel_id": "channel-c",
+      "country": "US",
+      "clicks": 100,
+      "conversions": 20,
+      "approved_conversions": 18,
+      "revenue": 180.0,
+      "payout": 100.0
+    },
+    {
+      "event_hour": "2026-09-02T10:00:00Z",
+      "advertiser_id": "adv-1",
+      "offer_id": "offer-a",
+      "channel_id": "channel-c",
+      "country": "US",
+      "clicks": 90,
+      "conversions": 18,
+      "approved_conversions": 16,
+      "revenue": 160.0,
+      "payout": 95.0
+    },
+    {
+      "event_hour": "2026-09-02T10:00:00Z",
+      "advertiser_id": "adv-1",
+      "offer_id": "offer-b",
+      "channel_id": "channel-d",
+      "country": "CA",
+      "clicks": 40,
+      "conversions": 4,
+      "approved_conversions": 4,
+      "revenue": 40.0,
+      "payout": 20.0
+    }
+  ],
+  "conversion_events": [
+    {
+      "event_time": "2026-09-02T10:20:00Z",
+      "conversion_id": "conv-1",
+      "click_id": "click-1",
+      "click_time": "2026-09-02T10:10:00Z",
+      "advertiser_id": "adv-1",
+      "offer_id": "offer-a",
+      "channel_id": "channel-c",
+      "country": "US",
+      "ip_hash": "ip-hash-1",
+      "device_hash": "device-hash-1",
+      "approval_status": "approved"
+    }
+  ],
+  "config_changes": [
+    {
+      "record_id": "change-1",
+      "event_time": "2026-09-02T09:45:00Z",
+      "entity_type": "offer",
+      "entity_id": "offer-a",
+      "field_name": "payout_per_conversion",
+      "old_value": 5.0,
+      "new_value": 7.0
+    }
+  ],
+  "caps": [
+    {
+      "record_id": "cap-1",
+      "event_time": "2026-09-02T10:30:00Z",
+      "offer_id": "offer-a",
+      "limit": 1000,
+      "used": 800,
+      "hit": false
+    }
+  ],
+  "postbacks": [
+    {
+      "record_id": "postback-1",
+      "event_time": "2026-09-02T10:20:00Z",
+      "advertiser_id": "adv-1",
+      "offer_id": "offer-a",
+      "status_code": 200,
+      "latency_ms": 120,
+      "error_type": null
+    }
+  ],
+  "quality_events": [
+    {
+      "record_id": "quality-1",
+      "event_time": "2026-09-02T10:25:00Z",
+      "channel_id": "channel-c",
+      "signal_type": "short_ctit_rate",
+      "signal_value": 0.08,
+      "adjudicated": false
+    }
+  ],
+  "routing_changes": []
+}

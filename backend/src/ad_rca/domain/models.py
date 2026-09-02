@@ -75,6 +75,85 @@ class PerformanceRow(StrictModel):
         return self
 
 
+class ConversionEvent(StrictModel):
+    event_time: datetime
+    conversion_id: str
+    click_id: str
+    click_time: datetime
+    advertiser_id: str
+    offer_id: str
+    channel_id: str
+    country: str
+    ip_hash: str
+    device_hash: str
+    approval_status: str
+
+
+class ConfigChange(StrictModel):
+    record_id: str
+    event_time: datetime
+    entity_type: str
+    entity_id: str
+    field_name: str
+    old_value: float
+    new_value: float
+
+
+class CapObservation(StrictModel):
+    record_id: str
+    event_time: datetime
+    offer_id: str
+    limit: int = Field(ge=0)
+    used: int = Field(ge=0)
+    hit: bool
+
+
+class PostbackEvent(StrictModel):
+    record_id: str
+    event_time: datetime
+    advertiser_id: str
+    offer_id: str
+    channel_id: str | None = None
+    country: str | None = None
+    status_code: int = Field(ge=100, le=599)
+    latency_ms: int = Field(ge=0)
+    error_type: str | None
+
+
+class QualityEvent(StrictModel):
+    record_id: str
+    event_time: datetime
+    channel_id: str
+    signal_type: str
+    signal_value: float = Field(ge=0)
+    adjudicated: bool
+
+
+class RoutingChange(StrictModel):
+    record_id: str
+    event_time: datetime
+    channel_id: str
+    from_offer_id: str
+    to_offer_id: str
+
+
+class ScenarioMetadata(StrictModel):
+    scenario_id: str
+    name: str
+    timezone: str
+
+
+class ScenarioBundle(StrictModel):
+    metadata: ScenarioMetadata
+    performance: tuple[PerformanceRow, ...]
+    conversion_events: tuple[ConversionEvent, ...] = ()
+    config_changes: tuple[ConfigChange, ...] = ()
+    caps: tuple[CapObservation, ...] = ()
+    postbacks: tuple[PostbackEvent, ...] = ()
+    quality_events: tuple[QualityEvent, ...] = ()
+    routing_changes: tuple[RoutingChange, ...] = ()
+
+
 class MetricSnapshot(StrictModel):
     clicks: int = Field(ge=0)
     conversions: int = Field(ge=0)
