@@ -215,7 +215,7 @@ assert prepared.context.incident == prepared.incident
 - [x] **Step 3: Write the failing Phase 2 acceptance test that runs all three fixtures through HTTP, validates ordered SSE events, replays reports, and confirms deterministic fallback**
 - [x] **Step 4: Implement Make targets and concise Phase 2 README usage/security documentation**
 - [x] **Step 5: Run `make test`, `make check`, and the three fixture workflows without a key**
-- [ ] **Step 6: With an explicitly configured local key, run `profitlens model-check` and one live DeepSeek investigation without logging the key**
+- [x] **Step 6: With an explicitly configured local key, run `profitlens model-check` and one live DeepSeek investigation without logging the key**
 - [x] **Step 7: Search the repository for forbidden SQL and accidentally tracked secrets; confirm `.env` stays ignored**
 - [x] **Step 8: Commit `feat: complete phase two agent backend`**
 
@@ -225,7 +225,7 @@ assert prepared.context.incident == prepared.incident
 - [x] `make check` passes with strict Pyright and Ruff.
 - [x] Three fixture scenarios run through HTTP and emit replayable SSE events and reports.
 - [x] Fake-model and model-failure paths produce deterministic reports without API keys.
-- [ ] A live `deepseek-v4-flash` probe succeeds when a valid key is configured.
+- [x] A live `deepseek-v4-flash` probe succeeds when a valid key is configured.
 - [x] SQL guard tests reject every prohibited query category and adapters expose read-only APIs only.
 - [x] No secret appears in Git-tracked files, logs, exceptions, artifacts, prompts, or reports.
 - [x] `domain`, `detection`, and `rca` remain independent of Phase 2 frameworks.
