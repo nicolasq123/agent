@@ -148,14 +148,14 @@ assert prepared.context.incident == prepared.incident
 - Consumes: fixed `QuerySpec` values and bound parameters only.
 - Produces: `validate_readonly_sql(sql, dialect)`, `ReadonlyClickHouseExecutor.query(spec, params)`, and `ReadonlyMySqlExecutor.query(spec, params)`; neither executor exposes command/execute/raw connection methods.
 
-- [ ] **Step 1: Write parameterized failing tests rejecting every forbidden statement from spec section 9.2, comments/CTEs that hide writes, multi-statements, locking reads, exports, URL/remote functions, and non-whitelisted tables**
-- [ ] **Step 2: Run and verify missing guard failure**
-- [ ] **Step 3: Implement sqlglot single-statement AST validation, SELECT/UNION-only roots, recursive forbidden-node/function checks, and table/column allowlists**
-- [ ] **Step 4: Write failing executor tests with fake driver clients asserting only validated fixed query specs and bounded limits/timeouts are sent**
-- [ ] **Step 5: Implement ClickHouse query-only adapter with readonly settings and MySQL SQLAlchemy async query-only adapter with read-only session setup**
-- [ ] **Step 6: Assert source contains no public write method and run a repository-wide forbidden-SQL test**
-- [ ] **Step 7: Run database tests and static checks**
-- [ ] **Step 8: Commit `feat: enforce read-only database access`**
+- [x] **Step 1: Write parameterized failing tests rejecting every forbidden statement from spec section 9.2, comments/CTEs that hide writes, multi-statements, locking reads, exports, URL/remote functions, and non-whitelisted tables**
+- [x] **Step 2: Run and verify missing guard failure**
+- [x] **Step 3: Implement sqlglot single-statement AST validation, SELECT/UNION-only roots, recursive forbidden-node/function checks, and table/column allowlists**
+- [x] **Step 4: Write failing executor tests with fake driver clients asserting only validated fixed query specs and bounded limits/timeouts are sent**
+- [x] **Step 5: Implement ClickHouse query-only adapter with readonly settings and MySQL SQLAlchemy async query-only adapter that relies on an externally provisioned SELECT-only account**
+- [x] **Step 6: Assert source contains no public write method and run a repository-wide forbidden-SQL test**
+- [x] **Step 7: Run database tests and static checks**
+- [x] **Step 8: Commit `feat: enforce read-only database access`**
 
 ### Task 6: Investigation application service and run registry
 
