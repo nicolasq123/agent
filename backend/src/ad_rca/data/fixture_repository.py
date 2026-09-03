@@ -1,11 +1,14 @@
+import json
 from collections.abc import Iterable
 from datetime import datetime
 from pathlib import Path
 
+from ad_rca.data.demo_scenarios import build_demo_bundle
 from ad_rca.domain.models import (
     CapObservation,
     ConfigChange,
     ConversionEvent,
+    DemoRecipeDocument,
     PerformanceRow,
     PostbackEvent,
     QualityEvent,
@@ -22,7 +25,12 @@ class FixtureRepository:
 
     @classmethod
     def load(cls, path: Path) -> "FixtureRepository":
-        return cls(ScenarioBundle.model_validate_json(path.read_bytes()))
+        raw = path.read_bytes()
+        payload = json.loads(raw)
+        if isinstance(payload, dict) and "recipe" in payload:
+            document = DemoRecipeDocument.model_validate(payload)
+            return cls(build_demo_bundle(document.recipe))
+        return cls(ScenarioBundle.model_validate_json(raw))
 
     @property
     def scenario_id(self) -> str:

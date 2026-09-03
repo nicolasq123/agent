@@ -1,0 +1,1 @@
+{"scenario_id":"cap_mix_shift","incident_type":"profit_drop","expected_slice":{"offer_id":"offer-high","channel_id":"channel-c","country":"US"},"root_cause":"cap_reached","maximum_confidence":"confirmed","minimum_explanatory_power":0.8}

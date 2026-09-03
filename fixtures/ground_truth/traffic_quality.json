@@ -1,0 +1,1 @@
+{"scenario_id":"traffic_quality","incident_type":"profit_drop","expected_slice":{"offer_id":"offer-a","channel_id":"channel-risk","country":"US"},"root_cause":"traffic_quality_degradation","maximum_confidence":"likely","minimum_explanatory_power":0.5}

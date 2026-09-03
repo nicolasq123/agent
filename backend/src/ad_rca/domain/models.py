@@ -154,6 +154,18 @@ class ScenarioBundle(StrictModel):
     routing_changes: tuple[RoutingChange, ...] = ()
 
 
+class DemoRecipe(StrictModel):
+    scenario_id: str
+    name: str
+    kind: str
+    start: datetime
+    history_weeks: int = Field(default=8, ge=4)
+
+
+class DemoRecipeDocument(StrictModel):
+    recipe: DemoRecipe
+
+
 class MetricSnapshot(StrictModel):
     clicks: int = Field(ge=0)
     conversions: int = Field(ge=0)

@@ -1,0 +1,1 @@
+{"scenario_id":"pricing_error","incident_type":"profit_drop","expected_slice":{"offer_id":"offer-a","channel_id":"channel-c","country":"US"},"root_cause":"payout_price_increase","maximum_confidence":"confirmed","minimum_explanatory_power":0.8}
