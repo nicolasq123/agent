@@ -189,13 +189,13 @@ assert prepared.context.incident == prepared.incident
 - Consumes: Task 6 application service.
 - Produces: the seven `/api` endpoints from spec section 10.1, JSON errors, and SSE event replay with `text/event-stream`.
 
-- [ ] **Step 1: Write failing TestClient tests for incident listing/detail, detection, investigation creation, event streaming, report retrieval, and questions**
-- [ ] **Step 2: Verify missing API app failure**
-- [ ] **Step 3: Implement app factory and typed schemas without exposing configuration secrets**
-- [ ] **Step 4: Implement SSE using persisted event replay; add explicit 404/409/422 error behavior**
-- [ ] **Step 5: Add a test proving POST endpoints never call a database writer and only create local artifacts**
-- [ ] **Step 6: Run API integration tests and static checks**
-- [ ] **Step 7: Commit `feat: expose investigation HTTP and SSE APIs`**
+- [x] **Step 1: Write failing TestClient tests for incident listing/detail, detection, investigation creation, event streaming, report retrieval, and questions**
+- [x] **Step 2: Verify missing API app failure**
+- [x] **Step 3: Implement app factory and typed schemas without exposing configuration secrets**
+- [x] **Step 4: Implement SSE using persisted event replay; add explicit 404/409/422 error behavior**
+- [x] **Step 5: Add a test proving POST endpoints never call a database writer and only create local artifacts**
+- [x] **Step 6: Run API integration tests and static checks**
+- [x] **Step 7: Commit `feat: expose investigation HTTP and SSE APIs`**
 
 ### Task 8: CLI, developer commands, live-model probe, and Phase 2 acceptance
 
