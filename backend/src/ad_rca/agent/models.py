@@ -61,4 +61,3 @@ class QuestionAnswer(StrictModel):
     answer: str = Field(min_length=1, max_length=4000)
     evidence_ids: tuple[str, ...] = ()
     generated_without_llm: bool = False
-

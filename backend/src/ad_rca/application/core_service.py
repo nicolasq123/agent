@@ -3,6 +3,7 @@ from collections.abc import Mapping, Sequence
 from datetime import datetime, timedelta
 from statistics import median
 
+from ad_rca.application.investigation_case import PreparedInvestigation
 from ad_rca.data.fixture_repository import FixtureRepository
 from ad_rca.detection.detector import DetectionConfig, detect_incident
 from ad_rca.detection.metrics import aggregate_metrics
@@ -57,6 +58,10 @@ class CoreRcaService:
         self._detection_config = detection_config or DetectionConfig()
 
     def investigate(self, scenario_id: str) -> CoreInvestigationResult:
+        prepared = self.prepare(scenario_id)
+        return self.verify(prepared, prepared.candidates[:3])
+
+    def prepare(self, scenario_id: str) -> PreparedInvestigation:
         if scenario_id != self._repository.scenario_id:
             raise ValueError(f"unknown scenario: {scenario_id}")
         all_rows = self._repository.all_performance()
@@ -65,7 +70,7 @@ class CoreRcaService:
         history = tuple(row for row in all_rows if row.event_hour not in current_hours)
         detection = detect_incident(current, history, self._detection_config)
         if detection.incident is None:
-            return CoreInvestigationResult(
+            return PreparedInvestigation(
                 status=detection.status,
                 incident=None,
                 residual_loss=0.0,
@@ -100,8 +105,41 @@ class CoreRcaService:
             quality_events=self._repository.quality_events(evidence_window, top_slice.slice_key),
             routing_changes=self._repository.routing_changes(evidence_window, top_slice.slice_key),
         )
-        candidates = generate_candidates(context)[:3]
-        hypotheses = tuple(self._verifiers[item].verify(context) for item in candidates)
+        return PreparedInvestigation(
+            status=detection.status,
+            incident=detection.incident,
+            attributions=attribution.paths,
+            residual_loss=attribution.residual_loss,
+            context=context,
+            candidates=generate_candidates(context),
+        )
+
+    def verify(
+        self,
+        prepared: PreparedInvestigation,
+        selected: Sequence[HypothesisType],
+    ) -> CoreInvestigationResult:
+        if prepared.incident is None:
+            if selected:
+                raise ValueError("cannot select candidates without an incident")
+            return CoreInvestigationResult(
+                status=prepared.status,
+                incident=None,
+                residual_loss=prepared.residual_loss,
+            )
+        if prepared.context is None:
+            raise ValueError("prepared incident is missing verification context")
+        selected_tuple = tuple(selected)
+        if len(selected_tuple) > 3:
+            raise ValueError("at most three candidates can be selected")
+        if len(set(selected_tuple)) != len(selected_tuple):
+            raise ValueError("duplicate candidate selection")
+        if any(item not in prepared.candidates for item in selected_tuple):
+            raise ValueError("selected candidate was not offered by deterministic analysis")
+
+        hypotheses = tuple(
+            self._verifiers[item].verify(prepared.context) for item in selected_tuple
+        )
         _guard_evidence(hypotheses)
         evidence = tuple(item for result in hypotheses for item in result.evidence)
         contradictions = tuple(item for result in hypotheses for item in result.contradictions)
@@ -112,12 +150,12 @@ class CoreRcaService:
         )
         return CoreInvestigationResult(
             status=status,
-            incident=detection.incident,
-            attributions=attribution.paths,
+            incident=prepared.incident,
+            attributions=prepared.attributions,
             hypotheses=hypotheses,
             evidence=evidence,
             contradictions=contradictions,
-            residual_loss=attribution.residual_loss,
+            residual_loss=prepared.residual_loss,
         )
 
 

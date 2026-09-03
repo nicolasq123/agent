@@ -70,7 +70,7 @@ def test_plan_rejects_more_than_three_hypotheses():
 - Consumes: `FixtureRepository`, `DetectionConfig`, existing attribution/decomposition/candidate/verifier functions.
 - Produces: `PreparedInvestigation`, `CoreRcaService.prepare(scenario_id)`, and `CoreRcaService.verify(prepared, selected)`; existing `investigate` remains backward compatible.
 
-- [ ] **Step 1: Write a failing test that prepares candidates without verifying them**
+- [x] **Step 1: Write a failing test that prepares candidates without verifying them**
 
 ```python
 prepared = service.prepare("pricing")
@@ -79,12 +79,12 @@ assert prepared.candidates[0] is HypothesisType.PAYOUT_PRICE_INCREASE
 assert prepared.context.incident == prepared.incident
 ```
 
-- [ ] **Step 2: Run the focused test and verify `prepare` is absent**
-- [ ] **Step 3: Extract the current deterministic stages into an immutable `PreparedInvestigation`**
-- [ ] **Step 4: Write a failing test that rejects unoffered and duplicate verifier selections**
-- [ ] **Step 5: Implement `verify`, evidence guards, and backward-compatible `investigate` composition**
-- [ ] **Step 6: Run application and Phase 1 regression tests**
-- [ ] **Step 7: Commit `refactor: expose controlled RCA investigation stages`**
+- [x] **Step 2: Run the focused test and verify `prepare` is absent**
+- [x] **Step 3: Extract the current deterministic stages into an immutable `PreparedInvestigation`**
+- [x] **Step 4: Write a failing test that rejects unoffered and duplicate verifier selections**
+- [x] **Step 5: Implement `verify`, evidence guards, and backward-compatible `investigate` composition**
+- [x] **Step 6: Run application and Phase 1 regression tests**
+- [x] **Step 7: Commit `refactor: expose controlled RCA investigation stages`**
 
 ### Task 3: Fake and DeepSeek-compatible model adapters
 
