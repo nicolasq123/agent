@@ -1,4 +1,4 @@
-.PHONY: install test check demo
+.PHONY: install test check demo agent-demo model-check dev
 
 install:
 	cd backend && uv sync --all-groups
@@ -11,3 +11,12 @@ check:
 
 demo:
 	cd backend && uv run profitlens investigate ../fixtures/demo/pricing_error.json --format json
+
+agent-demo:
+	cd backend && uv run profitlens agent ../fixtures/demo/pricing_error.json --model fake --format json
+
+model-check:
+	cd backend && uv run profitlens model-check
+
+dev:
+	cd backend && uv run profitlens serve

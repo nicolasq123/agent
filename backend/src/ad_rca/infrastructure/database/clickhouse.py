@@ -5,6 +5,7 @@ from typing import Protocol, cast
 import clickhouse_connect
 from pydantic import SecretStr
 
+from ad_rca.infrastructure.database.query_budget import QueryBudget
 from ad_rca.infrastructure.database.query_specs import QuerySpec
 from ad_rca.infrastructure.database.sql_guard import validate_readonly_sql
 
@@ -51,9 +52,11 @@ class ReadonlyClickHouseExecutor:
         self,
         client: ClickHouseQueryClient,
         query_specs: Mapping[str, QuerySpec],
+        budget: QueryBudget | None = None,
     ) -> None:
         self._client = client
         self._query_specs = dict(query_specs)
+        self._budget = budget or QueryBudget()
 
     def query(
         self, name: str, parameters: Mapping[str, object]
@@ -69,6 +72,7 @@ class ReadonlyClickHouseExecutor:
             allowed_columns=spec.allowed_columns,
             max_result_rows=spec.max_result_rows,
         )
+        self._budget.consume()
         rows = self._client.query(
             spec.sql,
             parameters,
@@ -90,6 +94,7 @@ def create_clickhouse_executor(
     password: SecretStr,
     secure: bool,
     query_specs: Mapping[str, QuerySpec],
+    budget: QueryBudget | None = None,
 ) -> ReadonlyClickHouseExecutor:
     raw = clickhouse_connect.get_client(
         host=host,
@@ -100,7 +105,7 @@ def create_clickhouse_executor(
         settings={"readonly": 2},
     )
     client = ClickHouseConnectQueryClient(cast(RawClickHouseClient, raw))
-    return ReadonlyClickHouseExecutor(client, query_specs)
+    return ReadonlyClickHouseExecutor(client, query_specs, budget)
 
 
 def _validate_parameters(spec: QuerySpec, parameters: Mapping[str, object]) -> None:

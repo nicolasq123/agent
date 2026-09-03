@@ -210,22 +210,22 @@ assert prepared.context.incident == prepared.incident
 - Consumes: settings, application service, API app, all three fixtures.
 - Produces: `profitlens agent`, `profitlens serve`, `profitlens model-check`, `make agent-demo`, and `make dev` commands.
 
-- [ ] **Step 1: Write failing CLI tests for fake-agent execution, model configuration check without printing secrets, and server factory selection**
-- [ ] **Step 2: Implement commands; `model-check` sends only a fixed harmless prompt and `agent` defaults to fake mode**
-- [ ] **Step 3: Write the failing Phase 2 acceptance test that runs all three fixtures through HTTP, validates ordered SSE events, replays reports, and confirms deterministic fallback**
-- [ ] **Step 4: Implement Make targets and concise Phase 2 README usage/security documentation**
-- [ ] **Step 5: Run `make test`, `make check`, and the three fixture workflows without a key**
+- [x] **Step 1: Write failing CLI tests for fake-agent execution, model configuration check without printing secrets, and server factory selection**
+- [x] **Step 2: Implement commands; `model-check` sends only a fixed harmless prompt and `agent` defaults to fake mode**
+- [x] **Step 3: Write the failing Phase 2 acceptance test that runs all three fixtures through HTTP, validates ordered SSE events, replays reports, and confirms deterministic fallback**
+- [x] **Step 4: Implement Make targets and concise Phase 2 README usage/security documentation**
+- [x] **Step 5: Run `make test`, `make check`, and the three fixture workflows without a key**
 - [ ] **Step 6: With an explicitly configured local key, run `profitlens model-check` and one live DeepSeek investigation without logging the key**
-- [ ] **Step 7: Search the repository for forbidden SQL and accidentally tracked secrets; confirm `.env` stays ignored**
-- [ ] **Step 8: Commit `feat: complete phase two agent backend`**
+- [x] **Step 7: Search the repository for forbidden SQL and accidentally tracked secrets; confirm `.env` stays ignored**
+- [x] **Step 8: Commit `feat: complete phase two agent backend`**
 
 ## Completion Gate
 
-- [ ] All Phase 1 and Phase 2 tests pass.
-- [ ] `make check` passes with strict Pyright and Ruff.
-- [ ] Three fixture scenarios run through HTTP and emit replayable SSE events and reports.
-- [ ] Fake-model and model-failure paths produce deterministic reports without API keys.
+- [x] All Phase 1 and Phase 2 tests pass.
+- [x] `make check` passes with strict Pyright and Ruff.
+- [x] Three fixture scenarios run through HTTP and emit replayable SSE events and reports.
+- [x] Fake-model and model-failure paths produce deterministic reports without API keys.
 - [ ] A live `deepseek-v4-flash` probe succeeds when a valid key is configured.
-- [ ] SQL guard tests reject every prohibited query category and adapters expose read-only APIs only.
-- [ ] No secret appears in Git-tracked files, logs, exceptions, artifacts, prompts, or reports.
-- [ ] `domain`, `detection`, and `rca` remain independent of Phase 2 frameworks.
+- [x] SQL guard tests reject every prohibited query category and adapters expose read-only APIs only.
+- [x] No secret appears in Git-tracked files, logs, exceptions, artifacts, prompts, or reports.
+- [x] `domain`, `detection`, and `rca` remain independent of Phase 2 frameworks.

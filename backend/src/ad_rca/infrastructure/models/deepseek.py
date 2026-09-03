@@ -79,7 +79,8 @@ class DeepSeekPlanner:
         system = (
             "You are a bounded RCA planner. Return JSON only with hypotheses and rationale. "
             "Choose one to three hypotheses only from candidates. Never calculate metrics, "
-            "invent evidence, request credentials, or produce SQL."
+            "invent evidence, request credentials, or produce SQL. "
+            + _schema_instruction(InvestigationPlan)
         )
         return _validated_call(
             self._client,
@@ -105,7 +106,8 @@ class DeepSeekReportComposer:
         system = (
             "Write a concise Chinese RCA report as JSON matching the requested schema. "
             "Use only supplied calculations, hypotheses, and evidence IDs. Every conclusion "
-            "must cite supplied evidence IDs. Do not create facts, calculations, or SQL."
+            "must cite supplied evidence IDs. Do not create facts, calculations, or SQL. "
+            + _schema_instruction(InvestigationReport)
         )
         return _validated_call(
             self._client,
@@ -126,7 +128,8 @@ class DeepSeekReportComposer:
             self._client,
             (
                 "Answer only within this incident report. Return JSON with answer and "
-                "evidence_ids. Cite only supplied IDs; say evidence is insufficient when needed."
+                "evidence_ids. Cite only supplied IDs; say evidence is insufficient when needed. "
+                + _schema_instruction(QuestionAnswer)
             ),
             json.dumps(payload, ensure_ascii=False, separators=(",", ":")),
             QuestionAnswer,
@@ -189,3 +192,8 @@ def _validate_report(report: InvestigationReport, request: ReportRequest) -> Non
 def _validate_answer(answer: QuestionAnswer, allowed_ids: set[str]) -> None:
     if any(evidence_id not in allowed_ids for evidence_id in answer.evidence_ids):
         raise ValueError("model created an unknown evidence ID")
+
+
+def _schema_instruction(model: type[BaseModel]) -> str:
+    schema = json.dumps(model.model_json_schema(), ensure_ascii=False, separators=(",", ":"))
+    return f"Response schema: {schema}"

@@ -17,4 +17,3 @@ class InvestigationCreated(StrictModel):
 
 class QuestionBody(StrictModel):
     question: str = Field(min_length=1, max_length=1000)
-

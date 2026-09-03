@@ -49,6 +49,8 @@ def test_deepseek_planner_accepts_only_offered_hypotheses_and_sends_aggregates()
     assert "api_key" not in serialized
     assert "select " not in serialized
     assert "performance" not in serialized
+    assert "response schema" in client.requests[0][0].lower()
+    assert "hypotheses" in client.requests[0][0]
 
 
 def test_deepseek_planner_repairs_invalid_json_once() -> None:

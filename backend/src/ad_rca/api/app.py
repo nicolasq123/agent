@@ -1,6 +1,6 @@
 # pyright: reportUnusedFunction=false
 import json
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 
 from fastapi import FastAPI, HTTPException, status
 from fastapi.responses import StreamingResponse
@@ -37,15 +37,15 @@ def create_app(service: InvestigationService) -> FastAPI:
     )
     def create_investigation(incident_id: str) -> InvestigationCreated:
         try:
-            run = service.start_investigation(incident_id)
+            run = service.queue_investigation(incident_id)
         except KeyError as error:
             raise HTTPException(status_code=404, detail="incident not found") from error
         except ValueError as error:
             raise HTTPException(status_code=409, detail="run could not be created") from error
         return InvestigationCreated(
             run_id=run.run_id,
-            incident_id=run.report.incident_id,
-            status=run.result.status.value,
+            incident_id=run.incident_id,
+            status=run.status,
             events_url=f"/api/investigations/{run.run_id}/events",
             report_url=f"/api/investigations/{run.run_id}/report",
         )
@@ -53,8 +53,8 @@ def create_app(service: InvestigationService) -> FastAPI:
     @app.get("/api/investigations/{run_id}/events")
     def get_events(run_id: str) -> StreamingResponse:
         try:
-            events = service.get_events(run_id)
-        except FileNotFoundError as error:
+            events = service.stream_events(run_id)
+        except (FileNotFoundError, KeyError) as error:
             raise HTTPException(status_code=404, detail="investigation not found") from error
         return StreamingResponse(
             _sse_frames(events),
@@ -79,7 +79,7 @@ def create_app(service: InvestigationService) -> FastAPI:
     return app
 
 
-def _sse_frames(events: tuple[WorkflowEvent, ...]) -> Iterator[str]:
+def _sse_frames(events: Iterable[WorkflowEvent]) -> Iterator[str]:
     for event in events:
         data = json.dumps(event.model_dump(mode="json"), ensure_ascii=False, separators=(",", ":"))
         yield f"id: {event.sequence}\nevent: {event.event_type}\ndata: {data}\n\n"

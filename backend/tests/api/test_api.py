@@ -75,8 +75,7 @@ def test_api_returns_explicit_not_found_and_validation_errors(tmp_path: Path) ->
         == 404
     )
     assert (
-        client.post("/api/investigations/run/questions", json={"question": ""}).status_code
-        == 422
+        client.post("/api/investigations/run/questions", json={"question": ""}).status_code == 422
     )
 
 
@@ -84,7 +83,8 @@ def test_post_endpoints_create_only_local_artifacts(tmp_path: Path) -> None:
     client = _client(tmp_path)
     incident_id = client.get("/api/incidents").json()[0]["incident_id"]
 
-    client.post(f"/api/incidents/{incident_id}/investigations")
+    created = client.post(f"/api/incidents/{incident_id}/investigations").json()
+    assert client.get(created["report_url"]).status_code == 200
 
     run_directory = tmp_path / incident_id / "run-api"
     assert {path.name for path in run_directory.iterdir()} == {

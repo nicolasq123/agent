@@ -1,4 +1,5 @@
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from uuid import uuid4
@@ -6,7 +7,7 @@ from uuid import uuid4
 from ad_rca.agent.contracts import InvestigationPlanner, ReportComposer
 from ad_rca.agent.models import InvestigationReport, QuestionAnswer, QuestionRequest
 from ad_rca.application.core_service import CoreRcaService, default_verifiers
-from ad_rca.application.run_registry import RunRegistry
+from ad_rca.application.run_registry import RunHandle, RunRegistry
 from ad_rca.data.fixture_repository import FixtureRepository
 from ad_rca.domain.models import Incident
 from ad_rca.infrastructure.artifacts import ArtifactStore
@@ -44,6 +45,7 @@ class InvestigationService:
         self._fallback_composer = TemplateReportComposer()
         self._registry = registry or RunRegistry()
         self._id_factory = id_factory or (lambda: f"run-{uuid4().hex}")
+        self._executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="profitlens")
 
     def list_incidents(self) -> tuple[Incident, ...]:
         return tuple(
@@ -75,10 +77,22 @@ class InvestigationService:
         self._registry.add(run)
         return run
 
+    def queue_investigation(self, incident_id: str) -> RunHandle:
+        entry = self._incidents.get(incident_id)
+        if entry is None:
+            raise KeyError(incident_id)
+        handle = RunHandle(
+            run_id=self._id_factory(),
+            incident_id=incident_id,
+            status="running",
+        )
+        self._registry.start(handle)
+        self._executor.submit(self._execute_background, entry, handle)
+        return handle
+
     def get_report(self, run_id: str) -> InvestigationReport:
-        run = self._registry.get(run_id)
-        if run is not None:
-            return run.report
+        if self._registry.contains(run_id):
+            return self._registry.wait(run_id).report
         return self._artifacts.read_report(run_id)
 
     def get_events(self, run_id: str) -> tuple[WorkflowEvent, ...]:
@@ -86,6 +100,11 @@ class InvestigationService:
         if run is not None:
             return run.events
         return self._artifacts.read_events(run_id)
+
+    def stream_events(self, run_id: str) -> Iterator[WorkflowEvent]:
+        if self._registry.contains(run_id):
+            return self._registry.stream(run_id)
+        return iter(self._artifacts.read_events(run_id))
 
     def answer_question(self, run_id: str, question: str) -> QuestionAnswer:
         report = self.get_report(run_id)
@@ -96,6 +115,27 @@ class InvestigationService:
             return answer
         except (ModelUnavailableError, InvalidModelOutputError, ValueError):
             return self._fallback_composer.answer(request)
+
+    def _execute_background(self, entry: FixtureIncident, handle: RunHandle) -> None:
+        workflow = InvestigationWorkflow(
+            CoreRcaService(entry.repository, default_verifiers()),
+            self._planner,
+            self._composer,
+            artifact_store=self._artifacts,
+        )
+
+        def publish(event: WorkflowEvent) -> None:
+            self._registry.publish(handle.run_id, event)
+            self._artifacts.append_event(handle.incident_id, handle.run_id, event)
+
+        try:
+            run = workflow.run(entry.scenario_id, run_id=handle.run_id, event_sink=publish)
+            self._registry.complete(run)
+        except Exception as error:
+            self._registry.fail(
+                handle.run_id,
+                f"investigation failed ({type(error).__name__})",
+            )
 
 
 def build_fixture_service(
@@ -129,9 +169,7 @@ def build_fixture_service(
     )
 
 
-def _validate_answer_evidence(
-    answer: QuestionAnswer, report: InvestigationReport
-) -> None:
+def _validate_answer_evidence(answer: QuestionAnswer, report: InvestigationReport) -> None:
     allowed = {
         evidence_id for conclusion in report.conclusions for evidence_id in conclusion.evidence_ids
     }

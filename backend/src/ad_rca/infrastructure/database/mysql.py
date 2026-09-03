@@ -6,6 +6,7 @@ from typing import Protocol
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
+from ad_rca.infrastructure.database.query_budget import QueryBudget
 from ad_rca.infrastructure.database.query_specs import QuerySpec
 from ad_rca.infrastructure.database.sql_guard import validate_readonly_sql
 
@@ -40,9 +41,11 @@ class ReadonlyMySqlExecutor:
         self,
         client: MySqlQueryClient,
         query_specs: Mapping[str, QuerySpec],
+        budget: QueryBudget | None = None,
     ) -> None:
         self._client = client
         self._query_specs = dict(query_specs)
+        self._budget = budget or QueryBudget()
 
     async def query(
         self, name: str, parameters: Mapping[str, object]
@@ -59,14 +62,19 @@ class ReadonlyMySqlExecutor:
             allowed_columns=spec.allowed_columns,
             max_result_rows=spec.max_result_rows,
         )
+        self._budget.consume()
         rows = await self._client.fetch_all(spec.sql, parameters, spec.timeout_seconds)
         return tuple(rows)
 
 
-def create_mysql_executor(url: str, query_specs: Mapping[str, QuerySpec]) -> ReadonlyMySqlExecutor:
+def create_mysql_executor(
+    url: str,
+    query_specs: Mapping[str, QuerySpec],
+    budget: QueryBudget | None = None,
+) -> ReadonlyMySqlExecutor:
     engine = create_async_engine(
         url,
         pool_pre_ping=True,
         connect_args={"autocommit": True},
     )
-    return ReadonlyMySqlExecutor(SqlAlchemyMySqlQueryClient(engine), query_specs)
+    return ReadonlyMySqlExecutor(SqlAlchemyMySqlQueryClient(engine), query_specs, budget)

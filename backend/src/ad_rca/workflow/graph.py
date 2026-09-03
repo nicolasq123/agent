@@ -41,11 +41,13 @@ _EVENT_ORDER: dict[str, int] = {
 
 
 class GraphRunner(Protocol):
-    def invoke(
+    def stream(
         self,
         input: InvestigationState,
         config: dict[str, object],
-    ) -> InvestigationState: ...
+        *,
+        stream_mode: Literal["values"],
+    ) -> Sequence[InvestigationState]: ...
 
 
 class WorkflowRun(StrictModel):
@@ -79,7 +81,13 @@ class InvestigationWorkflow:
         self._clock = clock or (lambda: datetime.now(UTC))
         self._graph = self._build_graph()
 
-    def run(self, scenario_id: str, *, run_id: str) -> WorkflowRun:
+    def run(
+        self,
+        scenario_id: str,
+        *,
+        run_id: str,
+        event_sink: Callable[[WorkflowEvent], None] | None = None,
+    ) -> WorkflowRun:
         initial: InvestigationState = {
             "scenario_id": scenario_id,
             "run_id": run_id,
@@ -93,10 +101,21 @@ class InvestigationWorkflow:
             "events": [],
             "warnings": [],
         }
-        state = self._graph.invoke(
+        state = initial
+        published_events = 0
+        for graph_state in self._graph.stream(
             initial,
             {"configurable": {"thread_id": run_id}},
-        )
+            stream_mode="values",
+        ):
+            state = graph_state
+            if event_sink is not None:
+                current_events = sorted(
+                    state["events"], key=lambda event: (event.sequence, event.event_type)
+                )
+                for event in current_events[published_events:]:
+                    event_sink(event)
+                published_events = len(current_events)
         result = state["result"]
         report = state["report"]
         if result is None or report is None:
@@ -109,7 +128,8 @@ class InvestigationWorkflow:
         self._artifacts.write_incident(result.incident.incident_id, run_id, result.incident)
         self._artifacts.write_result(result.incident.incident_id, run_id, result)
         self._artifacts.write_report(result.incident.incident_id, run_id, report)
-        self._artifacts.write_events(result.incident.incident_id, run_id, events)
+        if event_sink is None:
+            self._artifacts.write_events(result.incident.incident_id, run_id, events)
         return WorkflowRun(
             run_id=run_id,
             rounds=state["rounds_completed"],
@@ -188,7 +208,7 @@ class InvestigationWorkflow:
             "events": [
                 self._event(
                     state,
-                    35 + state["round_number"] * 5,
+                    40 + (state["round_number"] - 1) * 30,
                     "plan_created",
                     {
                         "round": state["round_number"],
@@ -215,7 +235,7 @@ class InvestigationWorkflow:
         merged = _merge_results(prepared, previous, new_hypotheses)
         events: list[WorkflowEvent] = []
         for index, hypothesis in enumerate(new_hypotheses):
-            base = 45 + state["round_number"] * 15 + index * 2
+            base = 50 + (state["round_number"] - 1) * 30 + index * 3
             events.append(
                 self._event(
                     state,
@@ -228,7 +248,7 @@ class InvestigationWorkflow:
                 events.append(
                     self._event(
                         state,
-                        base + 1,
+                        base + 2,
                         "evidence_found",
                         {
                             "hypothesis": hypothesis.hypothesis.value,
@@ -249,7 +269,7 @@ class InvestigationWorkflow:
                 events.append(
                     self._event(
                         state,
-                        80,
+                        base + 2,
                         "root_cause_confirmed",
                         {"hypothesis": hypothesis.hypothesis.value},
                     )
@@ -294,7 +314,7 @@ class InvestigationWorkflow:
             "events": [
                 self._event(
                     state,
-                    90,
+                    100,
                     "report_generated",
                     {"generated_without_llm": report.generated_without_llm},
                 )

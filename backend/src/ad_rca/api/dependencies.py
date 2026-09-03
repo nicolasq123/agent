@@ -37,4 +37,3 @@ def build_service(settings: Settings | None = None) -> InvestigationService:
         planner,
         composer,
     )
-

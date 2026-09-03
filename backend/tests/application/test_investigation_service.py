@@ -1,5 +1,7 @@
 from pathlib import Path
+from threading import Event
 
+from ad_rca.agent.models import InvestigationReport, ReportRequest
 from ad_rca.application.investigation_service import build_fixture_service
 from ad_rca.infrastructure.models.fake import FakePlanner, TemplateReportComposer
 
@@ -75,3 +77,40 @@ def test_question_answer_cites_only_current_report_evidence(tmp_path: Path) -> N
     }
     assert set(answer.evidence_ids).issubset(allowed)
     assert "为什么利润下降" in answer.answer
+
+
+class BlockingComposer(TemplateReportComposer):
+    def __init__(self, entered: Event, release: Event) -> None:
+        self._entered = entered
+        self._release = release
+
+    def compose(self, request: ReportRequest) -> InvestigationReport:
+        self._entered.set()
+        assert self._release.wait(timeout=5)
+        return super().compose(request)
+
+
+def test_background_investigation_streams_events_before_report_completion(
+    tmp_path: Path,
+) -> None:
+    entered = Event()
+    release = Event()
+    service = build_fixture_service(
+        Path("../fixtures/demo"),
+        tmp_path,
+        FakePlanner(),
+        BlockingComposer(entered, release),
+        id_factory=lambda: "run-live",
+    )
+    handle = service.queue_investigation(service.list_incidents()[0].incident_id)
+    assert entered.wait(timeout=5)
+
+    stream = service.stream_events(handle.run_id)
+    first = next(stream)
+
+    assert first.event_type == "baseline_loaded"
+    assert handle.status == "running"
+    release.set()
+    remaining = tuple(stream)
+    assert remaining[-1].event_type == "report_generated"
+    assert service.get_report(handle.run_id).run_id == handle.run_id

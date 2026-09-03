@@ -33,6 +33,12 @@ class ArtifactStore:
             for event in ordered:
                 stream.write(event.model_dump_json() + "\n")
 
+    def append_event(self, incident_id: str, run_id: str, event: WorkflowEvent) -> None:
+        directory = self._directory(incident_id, run_id)
+        directory.mkdir(parents=True, exist_ok=True)
+        with (directory / "events.jsonl").open("a", encoding="utf-8") as stream:
+            stream.write(event.model_dump_json() + "\n")
+
     def read_report(self, run_id: str) -> InvestigationReport:
         path = self._find_run_file(run_id, "report.json")
         return InvestigationReport.model_validate_json(path.read_bytes())

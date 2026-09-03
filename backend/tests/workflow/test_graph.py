@@ -13,6 +13,7 @@ from ad_rca.domain.enums import Confidence, HypothesisType
 from ad_rca.infrastructure.artifacts import ArtifactStore
 from ad_rca.infrastructure.models.deepseek import ModelUnavailableError
 from ad_rca.infrastructure.models.fake import FakePlanner, TemplateReportComposer
+from ad_rca.workflow.events import WorkflowEvent
 from ad_rca.workflow.graph import InvestigationWorkflow
 
 
@@ -95,6 +96,24 @@ def test_graph_stops_after_second_round_when_first_round_is_inconclusive(
         HypothesisType.TRAFFIC_VOLUME_DROP,
         HypothesisType.TRAFFIC_MIX_SHIFT,
     ]
+
+
+def test_two_round_live_stream_emits_each_final_event_once(tmp_path: Path) -> None:
+    observed: list[WorkflowEvent] = []
+    workflow = InvestigationWorkflow(
+        _service("cap_mix_shift"),
+        SequentialPlanner(),
+        TemplateReportComposer(),
+        artifact_store=ArtifactStore(tmp_path),
+    )
+
+    run = workflow.run(
+        "cap_mix_shift",
+        run_id="run-two-round-stream",
+        event_sink=observed.append,
+    )
+
+    assert observed == list(run.events)
 
 
 class InventingComposer(TemplateReportComposer):
