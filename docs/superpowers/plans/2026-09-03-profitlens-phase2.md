@@ -37,7 +37,7 @@
 - Consumes: existing `HypothesisType`, `CoreInvestigationResult`, and `Evidence` models.
 - Produces: `Settings`, `InvestigationPlanner`, `ReportComposer`, `InvestigationPlan`, `InvestigationReport`, `ReportConclusion`, and deterministic fallback implementations.
 
-- [ ] **Step 1: Write failing tests for settings and immutable structured contracts**
+- [x] **Step 1: Write failing tests for settings and immutable structured contracts**
 
 ```python
 def test_settings_default_to_fixture_and_fake_model(monkeypatch):
@@ -52,11 +52,11 @@ def test_plan_rejects_more_than_three_hypotheses():
         InvestigationPlan(hypotheses=list(HypothesisType)[:4], rationale="too many")
 ```
 
-- [ ] **Step 2: Run `uv run pytest tests/agent/test_contracts.py -q` and verify missing-module failure**
-- [ ] **Step 3: Add dependencies and implement strict settings/contracts/models with `extra="forbid"`**
-- [ ] **Step 4: Add `.env.example` with blank secret and explicit fake/fixture defaults**
-- [ ] **Step 5: Run the focused tests and `uv run pyright`**
-- [ ] **Step 6: Commit `feat: define phase two agent contracts`**
+- [x] **Step 2: Run `uv run pytest tests/agent/test_contracts.py -q` and verify missing-module failure**
+- [x] **Step 3: Add dependencies and implement strict settings/contracts/models with `extra="forbid"`**
+- [x] **Step 4: Add `.env.example` with blank secret and explicit fake/fixture defaults**
+- [x] **Step 5: Run the focused tests and `uv run pyright`**
+- [x] **Step 6: Commit `feat: define phase two agent contracts`**
 
 ### Task 2: Prepare deterministic investigations for controlled orchestration
 

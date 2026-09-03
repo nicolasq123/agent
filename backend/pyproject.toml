@@ -4,9 +4,18 @@ version = "0.1.0"
 description = "Evidence-grounded advertising profit RCA engine"
 requires-python = ">=3.12"
 dependencies = [
+  "asyncmy>=0.2,<1",
+  "clickhouse-connect>=0.8,<1",
+  "fastapi>=0.116,<1",
+  "langgraph>=1,<2",
   "numpy>=2.2,<3",
+  "openai>=2,<3",
   "polars>=1.32,<2",
   "pydantic>=2.11,<3",
+  "pydantic-settings>=2,<3",
+  "sqlalchemy>=2,<3",
+  "sqlglot>=27,<29",
+  "uvicorn>=0.35,<1",
 ]
 
 [project.scripts]
@@ -21,6 +30,7 @@ packages = ["src/ad_rca"]
 
 [dependency-groups]
 dev = [
+  "httpx>=0.28,<1",
   "pyright>=1.1.400,<2",
   "pytest>=8.4,<9",
   "pytest-cov>=6.2,<7",
