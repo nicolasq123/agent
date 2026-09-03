@@ -123,15 +123,15 @@ assert prepared.context.incident == prepared.incident
 - Consumes: prepared investigation service, planner/composer contracts, `InMemorySaver`.
 - Produces: `InvestigationWorkflow.run(...) -> InvestigationReport`, ordered `WorkflowEvent` records, and `ArtifactStore` replay methods.
 
-- [ ] **Step 1: Write a failing graph test asserting ordered prepare/plan/verify/guard/report events and maximum two rounds**
-- [ ] **Step 2: Verify the graph test fails because workflow modules are missing**
-- [ ] **Step 3: Implement typed state, reducers, explicit nodes/edges, query/round/verifier budgets, and in-memory checkpoint compilation**
-- [ ] **Step 4: Write failing tests for planner/composer failure and invalid Evidence IDs**
-- [ ] **Step 5: Implement deterministic fallback with `generated_without_llm=true` and warning codes**
-- [ ] **Step 6: Write failing artifact tests for atomic JSON files and append-only `events.jsonl` replay**
-- [ ] **Step 7: Implement local artifact paths under `artifacts/<incident_id>/<run_id>/` with no database persistence**
-- [ ] **Step 8: Run workflow/artifact tests and static checks**
-- [ ] **Step 9: Commit `feat: orchestrate bounded investigations with LangGraph`**
+- [x] **Step 1: Write a failing graph test asserting ordered prepare/plan/verify/guard/report events and maximum two rounds**
+- [x] **Step 2: Verify the graph test fails because workflow modules are missing**
+- [x] **Step 3: Implement typed state, reducers, explicit nodes/edges, query/round/verifier budgets, and in-memory checkpoint compilation**
+- [x] **Step 4: Write failing tests for planner/composer failure and invalid Evidence IDs**
+- [x] **Step 5: Implement deterministic fallback with `generated_without_llm=true` and warning codes**
+- [x] **Step 6: Write failing artifact tests for atomic JSON files and append-only `events.jsonl` replay**
+- [x] **Step 7: Implement local artifact paths under `artifacts/<incident_id>/<run_id>/` with no database persistence**
+- [x] **Step 8: Run workflow/artifact tests and static checks**
+- [x] **Step 9: Commit `feat: orchestrate bounded investigations with LangGraph`**
 
 ### Task 5: SQL AST guard and read-only database executors
 
