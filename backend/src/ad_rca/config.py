@@ -26,4 +26,3 @@ class Settings(BaseSettings):
         if self.model_mode == "deepseek" and self.deepseek_api_key is None:
             raise ValueError("DEEPSEEK_API_KEY is required when MODEL_MODE=deepseek")
         return self
-

@@ -100,13 +100,13 @@ assert prepared.context.incident == prepared.incident
 - Consumes: contracts from Task 1 and only redacted aggregate summaries.
 - Produces: `FakePlanner`, `TemplateReportComposer`, `DeepSeekPlanner`, `DeepSeekReportComposer`, and `ModelUnavailableError`.
 
-- [ ] **Step 1: Write failing deterministic fake-planner/composer tests, including Evidence-ID citation checks**
-- [ ] **Step 2: Run the tests and verify missing adapter failures**
-- [ ] **Step 3: Implement deterministic adapters that select offered candidates and render a Chinese template report**
-- [ ] **Step 4: Write failing DeepSeek adapter tests using an injected fake chat client response; assert prompts contain no SQL, credentials, or raw rows**
-- [ ] **Step 5: Implement OpenAI-compatible Chat Completions calls against configured base URL, strict JSON parsing, one repair call, timeout, and secret-safe exceptions**
-- [ ] **Step 6: Run adapter tests and static checks**
-- [ ] **Step 7: Commit `feat: add fake and DeepSeek model adapters`**
+- [x] **Step 1: Write failing deterministic fake-planner/composer tests, including Evidence-ID citation checks**
+- [x] **Step 2: Run the tests and verify missing adapter failures**
+- [x] **Step 3: Implement deterministic adapters that select offered candidates and render a Chinese template report**
+- [x] **Step 4: Write failing DeepSeek adapter tests using an injected fake chat client response; assert prompts contain no SQL, credentials, or raw rows**
+- [x] **Step 5: Implement OpenAI-compatible Chat Completions calls against configured base URL, strict JSON parsing, one repair call, timeout, and secret-safe exceptions**
+- [x] **Step 6: Run adapter tests and static checks**
+- [x] **Step 7: Commit `feat: add fake and DeepSeek model adapters`**
 
 ### Task 4: Bounded LangGraph workflow and local run artifacts
 
