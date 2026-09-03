@@ -169,12 +169,12 @@ assert prepared.context.incident == prepared.incident
 - Consumes: fixture catalog, workflow factory, artifact store.
 - Produces: `list_incidents`, `detect`, `start_investigation`, `get_events`, `get_report`, and `answer_question`; POST operations mutate only in-memory state/local artifacts.
 
-- [ ] **Step 1: Write failing tests that list three fixture incidents and complete all three through the workflow**
-- [ ] **Step 2: Implement fixture catalog and synchronous bounded run lifecycle with stable UUIDs**
-- [ ] **Step 3: Write failing replay and incident-scoped question tests**
-- [ ] **Step 4: Implement artifact-backed replay and constrained questions that receive only the existing report/evidence summary**
-- [ ] **Step 5: Run application tests and static checks**
-- [ ] **Step 6: Commit `feat: add investigation application service`**
+- [x] **Step 1: Write failing tests that list three fixture incidents and complete all three through the workflow**
+- [x] **Step 2: Implement fixture catalog and synchronous bounded run lifecycle with stable UUIDs**
+- [x] **Step 3: Write failing replay and incident-scoped question tests**
+- [x] **Step 4: Implement artifact-backed replay and constrained questions that receive only the existing report/evidence summary**
+- [x] **Step 5: Run application tests and static checks**
+- [x] **Step 6: Commit `feat: add investigation application service`**
 
 ### Task 7: FastAPI and SSE surface
 

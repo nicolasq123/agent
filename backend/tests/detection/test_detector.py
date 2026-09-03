@@ -91,3 +91,12 @@ def test_absolute_loss_threshold_applies_to_the_whole_incident() -> None:
     assert result.incident is not None
     assert result.incident.incident_type is IncidentType.PROFIT_DROP
     assert result.incident.lost_profit == 600.0
+
+
+def test_incident_identity_distinguishes_different_data_in_the_same_window() -> None:
+    first = detect_incident(_current((50.0, 50.0, 100.0)), _history(), _config())
+    second = detect_incident(_current((20.0, 20.0, 100.0)), _history(), _config())
+
+    assert first.incident is not None
+    assert second.incident is not None
+    assert first.incident.incident_id != second.incident.incident_id

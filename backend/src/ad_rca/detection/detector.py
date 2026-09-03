@@ -120,7 +120,7 @@ def detect_incident(
 
     drop_ratio = lost_profit / abs(expected_profit) if expected_profit else None
     window = TimeWindow(start=selected_hours[0], end=selected_hours[-1] + timedelta(hours=1))
-    incident_id = _incident_id(incident_type, window)
+    incident_id = _incident_id(incident_type, window, current_rows)
     incident = Incident(
         incident_id=incident_id,
         incident_type=incident_type,
@@ -151,6 +151,34 @@ def _group_by_hour(
     return {event_hour: tuple(hour_rows) for event_hour, hour_rows in grouped.items()}
 
 
-def _incident_id(incident_type: IncidentType, window: TimeWindow) -> str:
-    source = f"{incident_type}:{window.start.isoformat()}:{window.end.isoformat()}"
+def _incident_id(
+    incident_type: IncidentType,
+    window: TimeWindow,
+    current_rows: Sequence[PerformanceRow],
+) -> str:
+    row_fingerprints = sorted(
+        ":".join(
+            (
+                row.event_hour.isoformat(),
+                row.advertiser_id,
+                row.offer_id,
+                row.channel_id,
+                row.country,
+                str(row.clicks),
+                str(row.conversions),
+                str(row.approved_conversions),
+                f"{row.revenue:.8f}",
+                f"{row.payout:.8f}",
+            )
+        )
+        for row in current_rows
+    )
+    source = ":".join(
+        (
+            incident_type,
+            window.start.isoformat(),
+            window.end.isoformat(),
+            *row_fingerprints,
+        )
+    )
     return f"inc-{sha256(source.encode()).hexdigest()[:12]}"
