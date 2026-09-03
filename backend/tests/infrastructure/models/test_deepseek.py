@@ -3,10 +3,17 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
+import httpx
+from pydantic import SecretStr
+
 from ad_rca.agent.models import PlanningRequest, ReportRequest
 from ad_rca.application.core_service import CoreRcaService, default_verifiers
 from ad_rca.data.fixture_repository import FixtureRepository
-from ad_rca.infrastructure.models.deepseek import DeepSeekPlanner, DeepSeekReportComposer
+from ad_rca.infrastructure.models.deepseek import (
+    DeepSeekPlanner,
+    DeepSeekReportComposer,
+    OpenAIJsonClient,
+)
 
 
 class RecordingJsonClient:
@@ -17,6 +24,60 @@ class RecordingJsonClient:
     def complete_json(self, system: str, user: str) -> str:
         self.requests.append((system, user))
         return self.responses.pop(0)
+
+
+def test_openai_compatible_client_sends_expected_deepseek_http_contract() -> None:
+    observed: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        observed["path"] = request.url.path
+        observed["authorization"] = request.headers["authorization"]
+        observed["payload"] = json.loads(request.content)
+        return httpx.Response(
+            200,
+            json={
+                "id": "chatcmpl-test",
+                "object": "chat.completion",
+                "created": 1,
+                "model": "deepseek-v4-flash",
+                "choices": [
+                    {
+                        "index": 0,
+                        "message": {"role": "assistant", "content": '{"status":"ok"}'},
+                        "finish_reason": "stop",
+                    }
+                ],
+                "usage": {
+                    "prompt_tokens": 1,
+                    "completion_tokens": 1,
+                    "total_tokens": 2,
+                },
+            },
+        )
+
+    http_client = httpx.Client(transport=httpx.MockTransport(handler))
+    client = OpenAIJsonClient(
+        api_key=SecretStr("test-secret"),
+        base_url="https://api.deepseek.com",
+        model="deepseek-v4-flash",
+        timeout_seconds=10,
+        http_client=http_client,
+    )
+
+    response = client.complete_json("system", "user")
+
+    assert response == '{"status":"ok"}'
+    assert observed["path"] == "/chat/completions"
+    assert observed["authorization"] == "Bearer test-secret"
+    assert observed["payload"] == {
+        "messages": [
+            {"role": "system", "content": "system"},
+            {"role": "user", "content": "user"},
+        ],
+        "model": "deepseek-v4-flash",
+        "response_format": {"type": "json_object"},
+        "temperature": 0.0,
+    }
 
 
 def _prepared_and_result():

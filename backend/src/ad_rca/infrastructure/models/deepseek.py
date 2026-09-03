@@ -4,6 +4,7 @@ import json
 from collections.abc import Callable
 from typing import Protocol
 
+import httpx
 from openai import OpenAI, OpenAIError
 from pydantic import BaseModel, SecretStr, ValidationError
 
@@ -37,12 +38,14 @@ class OpenAIJsonClient:
         base_url: str,
         model: str,
         timeout_seconds: float,
+        http_client: httpx.Client | None = None,
     ) -> None:
         self._client = OpenAI(
             api_key=api_key.get_secret_value(),
             base_url=base_url,
             timeout=timeout_seconds,
             max_retries=1,
+            http_client=http_client,
         )
         self._model = model
 
