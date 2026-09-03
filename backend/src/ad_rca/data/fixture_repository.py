@@ -32,6 +32,9 @@ class FixtureRepository:
     def name(self) -> str:
         return self._bundle.metadata.name
 
+    def all_performance(self) -> tuple[PerformanceRow, ...]:
+        return self._bundle.performance
+
     def performance(self, window: TimeWindow, slice_key: SliceKey) -> tuple[PerformanceRow, ...]:
         return tuple(
             row

@@ -81,3 +81,13 @@ def test_incomplete_current_windows_block_detection() -> None:
 
     assert result.status is RunStatus.DATA_QUALITY_BLOCKED
     assert result.incident is None
+
+
+def test_absolute_loss_threshold_applies_to_the_whole_incident() -> None:
+    config = _config().model_copy(update={"minimum_absolute_loss": 500.0})
+
+    result = detect_incident(_current((-200.0, -200.0, 100.0)), _history(), config)
+
+    assert result.incident is not None
+    assert result.incident.incident_type is IncidentType.PROFIT_DROP
+    assert result.incident.lost_profit == 600.0

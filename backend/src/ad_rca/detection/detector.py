@@ -81,10 +81,9 @@ def detect_incident(
                 drop_ratio is not None
                 and baseline.robust_z <= config.robust_z_threshold
                 and drop_ratio >= config.relative_drop_threshold
-                and lost_profit >= config.minimum_absolute_loss
             ):
                 profit_drop_hits += 1
-            if actual_profit <= -config.minimum_absolute_loss:
+            if actual_profit < 0:
                 negative_profit_hits += 1
     except InsufficientHistoryError as error:
         return DetectionResult(
@@ -95,12 +94,19 @@ def detect_incident(
             errors=(str(error),),
         )
 
+    actual_profit = aggregate_metrics(current_rows).profit
+    expected_profit = sum(item.expected_profit for item in baselines)
+    lost_profit = max(expected_profit - actual_profit, 0.0)
+
     incident_type: IncidentType | None = None
     triggered_windows = 0
-    if profit_drop_hits >= config.required_hits:
+    if profit_drop_hits >= config.required_hits and lost_profit >= config.minimum_absolute_loss:
         incident_type = IncidentType.PROFIT_DROP
         triggered_windows = profit_drop_hits
-    elif negative_profit_hits >= config.required_hits:
+    elif (
+        negative_profit_hits >= config.required_hits
+        and actual_profit <= -config.minimum_absolute_loss
+    ):
         incident_type = IncidentType.NEGATIVE_PROFIT
         triggered_windows = negative_profit_hits
 
@@ -112,9 +118,6 @@ def detect_incident(
             quality=quality,
         )
 
-    actual_profit = aggregate_metrics(current_rows).profit
-    expected_profit = sum(item.expected_profit for item in baselines)
-    lost_profit = max(expected_profit - actual_profit, 0.0)
     drop_ratio = lost_profit / abs(expected_profit) if expected_profit else None
     window = TimeWindow(start=selected_hours[0], end=selected_hours[-1] + timedelta(hours=1))
     incident_id = _incident_id(incident_type, window)
