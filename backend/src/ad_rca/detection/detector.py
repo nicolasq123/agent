@@ -42,6 +42,8 @@ def detect_incident(
     current_rows: Sequence[PerformanceRow],
     history_rows: Sequence[PerformanceRow],
     config: DetectionConfig,
+    *,
+    scope: SliceKey | None = None,
 ) -> DetectionResult:
     grouped = _group_by_hour(current_rows)
     quality = assess_data_quality(
@@ -124,7 +126,7 @@ def detect_incident(
     incident = Incident(
         incident_id=incident_id,
         incident_type=incident_type,
-        scope=SliceKey(),
+        scope=scope if scope is not None else SliceKey(),
         window=window,
         actual_profit=actual_profit,
         expected_profit=expected_profit,

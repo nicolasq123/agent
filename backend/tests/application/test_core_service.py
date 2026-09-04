@@ -3,7 +3,14 @@ from datetime import UTC, datetime, timedelta
 from ad_rca.application.core_service import CoreRcaService, default_verifiers
 from ad_rca.data.fixture_repository import FixtureRepository
 from ad_rca.domain.enums import Confidence, HypothesisType, RunStatus
-from ad_rca.domain.models import ConfigChange, PerformanceRow, ScenarioBundle, ScenarioMetadata
+from ad_rca.domain.models import (
+    ConfigChange,
+    PerformanceRow,
+    ScenarioBundle,
+    ScenarioMetadata,
+    SliceKey,
+    TimeWindow,
+)
 
 START = datetime(2026, 9, 2, 10, tzinfo=UTC)
 
@@ -70,3 +77,27 @@ def test_core_service_returns_completed_without_false_incident() -> None:
     assert result.status is RunStatus.COMPLETED
     assert result.incident is None
     assert result.hypotheses == ()
+
+
+def test_core_service_uses_explicit_window_and_scope() -> None:
+    window = TimeWindow(start=START, end=START + timedelta(hours=2))
+    scope = SliceKey(offer_id="offer-a")
+    service = CoreRcaService(
+        _repository(100.0),
+        default_verifiers(),
+        analysis_window=window,
+        base_scope=scope,
+    )
+
+    prepared = service.prepare("pricing")
+
+    assert prepared.incident is not None
+    assert prepared.incident.window == window
+    assert prepared.incident.scope == scope
+
+
+def test_core_service_keeps_last_three_hour_default() -> None:
+    prepared = CoreRcaService(_repository(100.0), default_verifiers()).prepare("pricing")
+
+    assert prepared.incident is not None
+    assert prepared.incident.window == TimeWindow(start=START, end=START + timedelta(hours=3))

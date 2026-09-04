@@ -1,5 +1,5 @@
 from hashlib import sha256
-from typing import Protocol
+from typing import Literal, Protocol
 
 from ad_rca.domain.enums import Confidence, EvidenceStrength, HypothesisStatus, HypothesisType
 from ad_rca.domain.models import (
@@ -33,6 +33,7 @@ class VerificationContext(StrictModel):
     postbacks: tuple[PostbackEvent, ...] = ()
     quality_events: tuple[QualityEvent, ...] = ()
     routing_changes: tuple[RoutingChange, ...] = ()
+    source_system: Literal["fixture", "mysql"] = "fixture"
 
 
 class Verifier(Protocol):
@@ -73,7 +74,11 @@ def make_evidence(
         hypothesis=hypothesis,
         strength=strength,
         observed_at=context.incident.window.start,
-        source=EvidenceSource(system="fixture", dataset=dataset, record_ids=record_ids),
+        source=EvidenceSource(
+            system=context.source_system,
+            dataset=dataset,
+            record_ids=record_ids,
+        ),
         statement=statement,
         calculation=EvidenceCalculation(
             formula=formula,

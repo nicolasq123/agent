@@ -2,6 +2,7 @@ from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from datetime import datetime, timedelta
 from statistics import median
+from typing import Literal
 
 from ad_rca.application.investigation_case import PreparedInvestigation
 from ad_rca.data.fixture_repository import FixtureRepository
@@ -52,10 +53,17 @@ class CoreRcaService:
         repository: FixtureRepository,
         verifiers: Mapping[HypothesisType, Verifier],
         detection_config: DetectionConfig | None = None,
+        *,
+        analysis_window: TimeWindow | None = None,
+        base_scope: SliceKey | None = None,
+        source_system: Literal["fixture", "mysql"] = "fixture",
     ) -> None:
         self._repository = repository
         self._verifiers = verifiers
         self._detection_config = detection_config or DetectionConfig()
+        self._analysis_window = analysis_window
+        self._base_scope = base_scope or SliceKey()
+        self._source_system: Literal["fixture", "mysql"] = source_system
 
     def investigate(self, scenario_id: str) -> CoreInvestigationResult:
         prepared = self.prepare(scenario_id)
@@ -64,11 +72,34 @@ class CoreRcaService:
     def prepare(self, scenario_id: str) -> PreparedInvestigation:
         if scenario_id != self._repository.scenario_id:
             raise ValueError(f"unknown scenario: {scenario_id}")
-        all_rows = self._repository.all_performance()
-        current_hours = sorted({row.event_hour for row in all_rows})[-3:]
-        current = tuple(row for row in all_rows if row.event_hour in current_hours)
-        history = tuple(row for row in all_rows if row.event_hour not in current_hours)
-        detection = detect_incident(current, history, self._detection_config)
+        all_rows = _filter_rows(self._repository.all_performance(), self._base_scope)
+        if self._analysis_window is None:
+            current_hours = sorted({row.event_hour for row in all_rows})[-3:]
+            current = tuple(row for row in all_rows if row.event_hour in current_hours)
+            history = tuple(row for row in all_rows if row.event_hour not in current_hours)
+            detection_config = self._detection_config
+        else:
+            current = tuple(
+                row
+                for row in all_rows
+                if self._analysis_window.start <= row.event_hour < self._analysis_window.end
+            )
+            history = tuple(
+                row for row in all_rows if row.event_hour < self._analysis_window.start
+            )
+            current_hours = sorted({row.event_hour for row in current})
+            expected_hours = int(
+                (self._analysis_window.end - self._analysis_window.start).total_seconds() // 3600
+            )
+            detection_config = self._detection_config.model_copy(
+                update={"window_count": expected_hours}
+            )
+        detection = detect_incident(
+            current,
+            history,
+            detection_config,
+            scope=self._base_scope,
+        )
         if detection.incident is None:
             return PreparedInvestigation(
                 status=detection.status,
@@ -76,7 +107,7 @@ class CoreRcaService:
                 residual_loss=0.0,
             )
 
-        expected = _expected_rows(history, len(current_hours), current_hours[0])
+        expected = _expected_rows(history, current_hours)
         attribution = attribute_loss(
             current,
             expected,
@@ -104,6 +135,7 @@ class CoreRcaService:
             postbacks=self._repository.postback_events(evidence_window, top_slice.slice_key),
             quality_events=self._repository.quality_events(evidence_window, top_slice.slice_key),
             routing_changes=self._repository.routing_changes(evidence_window, top_slice.slice_key),
+            source_system=self._source_system,
         )
         return PreparedInvestigation(
             status=detection.status,
@@ -160,29 +192,38 @@ class CoreRcaService:
 
 
 def _expected_rows(
-    history: Sequence[PerformanceRow], window_count: int, event_hour: datetime
+    history: Sequence[PerformanceRow], current_hours: Sequence[datetime]
 ) -> tuple[PerformanceRow, ...]:
     grouped: dict[tuple[str, str, str, str], list[PerformanceRow]] = defaultdict(list)
     for row in history:
         grouped[(row.advertiser_id, row.offer_id, row.channel_id, row.country)].append(row)
     rows: list[PerformanceRow] = []
     for (advertiser, offer, channel, country), values in grouped.items():
-        rows.append(
-            PerformanceRow(
-                event_hour=event_hour,
-                advertiser_id=advertiser,
-                offer_id=offer,
-                channel_id=channel,
-                country=country,
-                clicks=round(median(row.clicks for row in values) * window_count),
-                conversions=round(median(row.conversions for row in values) * window_count),
-                approved_conversions=round(
-                    median(row.approved_conversions for row in values) * window_count
-                ),
-                revenue=median(row.revenue for row in values) * window_count,
-                payout=median(row.payout for row in values) * window_count,
+        for current_hour in current_hours:
+            matching = tuple(
+                row
+                for row in values
+                if row.event_hour.weekday() == current_hour.weekday()
+                and row.event_hour.hour == current_hour.hour
             )
-        )
+            if not matching:
+                continue
+            rows.append(
+                PerformanceRow(
+                    event_hour=current_hour,
+                    advertiser_id=advertiser,
+                    offer_id=offer,
+                    channel_id=channel,
+                    country=country,
+                    clicks=round(median(row.clicks for row in matching)),
+                    conversions=round(median(row.conversions for row in matching)),
+                    approved_conversions=round(
+                        median(row.approved_conversions for row in matching)
+                    ),
+                    revenue=median(row.revenue for row in matching),
+                    payout=median(row.payout for row in matching),
+                )
+            )
     return tuple(rows)
 
 

@@ -18,7 +18,7 @@ class PricingVerifier:
             )
         )
         if not changes:
-            return unknown_result(context, self.hypothesis)
+            return _measured_payout_result(context)
         change = changes[-1]
         recomputed = min(
             (change.new_value - change.old_value) * context.current.conversions,
@@ -66,7 +66,7 @@ class RevenuePriceVerifier:
             )
         )
         if not changes:
-            return unknown_result(context, self.hypothesis)
+            return _measured_revenue_result(context)
         change = changes[-1]
         recomputed = min(
             (change.old_value - change.new_value) * context.current.conversions,
@@ -101,3 +101,82 @@ class RevenuePriceVerifier:
 
 def _explanatory_power(explained_loss: float, attributed_loss: float) -> float:
     return explained_loss / attributed_loss if attributed_loss else 0.0
+
+
+def _measured_payout_result(context: VerificationContext) -> HypothesisResult:
+    old_rate = _rate(context.baseline.payout, context.baseline.conversions)
+    new_rate = _rate(context.current.payout, context.current.conversions)
+    if old_rate is None or new_rate is None or old_rate <= 0 or new_rate < old_rate * 1.2:
+        return unknown_result(context, HypothesisType.PAYOUT_PRICE_INCREASE)
+    loss = min(
+        (new_rate - old_rate) * context.current.conversions,
+        context.attribution.lost_profit,
+    )
+    return _measured_result(
+        context,
+        HypothesisType.PAYOUT_PRICE_INCREASE,
+        "Measured payout per conversion increased against baseline",
+        "(current_payout_rate-baseline_payout_rate)*conversions",
+        old_rate,
+        new_rate,
+        loss,
+    )
+
+
+def _measured_revenue_result(context: VerificationContext) -> HypothesisResult:
+    old_rate = _rate(context.baseline.revenue, context.baseline.conversions)
+    new_rate = _rate(context.current.revenue, context.current.conversions)
+    if old_rate is None or new_rate is None or old_rate <= 0 or new_rate > old_rate * 0.8:
+        return unknown_result(context, HypothesisType.REVENUE_PRICE_DECREASE)
+    loss = min(
+        (old_rate - new_rate) * context.current.conversions,
+        context.attribution.lost_profit,
+    )
+    return _measured_result(
+        context,
+        HypothesisType.REVENUE_PRICE_DECREASE,
+        "Measured revenue per conversion decreased against baseline",
+        "(baseline_revenue_rate-current_revenue_rate)*conversions",
+        old_rate,
+        new_rate,
+        loss,
+    )
+
+
+def _measured_result(
+    context: VerificationContext,
+    hypothesis: HypothesisType,
+    statement: str,
+    formula: str,
+    baseline_rate: float,
+    current_rate: float,
+    loss: float,
+) -> HypothesisResult:
+    evidence = make_evidence(
+        hypothesis=hypothesis,
+        strength=EvidenceStrength.CORROBORATING,
+        context=context,
+        dataset="performance",
+        record_ids=(),
+        statement=statement,
+        formula=formula,
+        inputs={
+            "baseline_rate": baseline_rate,
+            "current_rate": current_rate,
+            "conversions": float(context.current.conversions),
+        },
+        explained_loss=loss,
+    )
+    return HypothesisResult(
+        hypothesis=hypothesis,
+        status=HypothesisStatus.SUPPORTED,
+        confidence=Confidence.LIKELY,
+        affected_slice=context.affected_slice,
+        explained_loss=loss,
+        explanatory_power=min(_explanatory_power(loss, context.attribution.lost_profit), 1.0),
+        evidence=(evidence,),
+    )
+
+
+def _rate(value: float, conversions: int) -> float | None:
+    return value / conversions if conversions > 0 else None

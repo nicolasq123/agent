@@ -9,6 +9,14 @@ def generate_candidates(context: VerificationContext) -> tuple[HypothesisType, .
             candidates.append(HypothesisType.PAYOUT_PRICE_INCREASE)
         if change.field_name == "revenue_per_conversion" and change.new_value < change.old_value:
             candidates.append(HypothesisType.REVENUE_PRICE_DECREASE)
+    current_payout_rate = _rate(context.current.payout, context.current.conversions)
+    baseline_payout_rate = _rate(context.baseline.payout, context.baseline.conversions)
+    if _increased_materially(current_payout_rate, baseline_payout_rate):
+        candidates.append(HypothesisType.PAYOUT_PRICE_INCREASE)
+    current_revenue_rate = _rate(context.current.revenue, context.current.conversions)
+    baseline_revenue_rate = _rate(context.baseline.revenue, context.baseline.conversions)
+    if _decreased_materially(current_revenue_rate, baseline_revenue_rate):
+        candidates.append(HypothesisType.REVENUE_PRICE_DECREASE)
     if any(cap.hit for cap in context.caps):
         candidates.append(HypothesisType.CAP_REACHED)
     if context.current.clicks < context.baseline.clicks * 0.8:
@@ -26,3 +34,25 @@ def generate_candidates(context: VerificationContext) -> tuple[HypothesisType, .
 
 def _ratio_drop(current: float | None, baseline: float | None) -> bool:
     return current is not None and baseline is not None and current < baseline * 0.8
+
+
+def _rate(value: float, conversions: int) -> float | None:
+    return value / conversions if conversions > 0 else None
+
+
+def _increased_materially(current: float | None, baseline: float | None) -> bool:
+    return (
+        current is not None
+        and baseline is not None
+        and baseline > 0
+        and current >= baseline * 1.2
+    )
+
+
+def _decreased_materially(current: float | None, baseline: float | None) -> bool:
+    return (
+        current is not None
+        and baseline is not None
+        and baseline > 0
+        and current <= baseline * 0.8
+    )

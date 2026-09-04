@@ -19,6 +19,41 @@ def test_pricing_verifier_confirms_recomputed_direct_loss() -> None:
     assert result.explained_loss == 600.0
 
 
+def test_pricing_verifier_marks_measured_rate_increase_as_likely() -> None:
+    context = context_fixture().model_copy(update={"config_changes": ()})
+
+    result = PricingVerifier().verify(context)
+
+    assert result.status is HypothesisStatus.SUPPORTED
+    assert result.confidence is Confidence.LIKELY
+    assert result.evidence[0].strength is EvidenceStrength.CORROBORATING
+    assert result.evidence[0].source.dataset == "performance"
+
+
+def test_revenue_verifier_marks_measured_rate_decrease_as_likely() -> None:
+    base = context_fixture()
+    context = base.model_copy(
+        update={
+            "config_changes": (),
+            "current": base.current.model_copy(update={"revenue": 400.0, "payout": 200.0}),
+        }
+    )
+
+    result = RevenuePriceVerifier().verify(context)
+
+    assert result.status is HypothesisStatus.SUPPORTED
+    assert result.confidence is Confidence.LIKELY
+    assert result.evidence[0].source.dataset == "performance"
+
+
+def test_evidence_uses_context_source_system() -> None:
+    context = context_fixture().model_copy(update={"source_system": "mysql"})
+
+    result = PricingVerifier().verify(context)
+
+    assert result.evidence[0].source.system == "mysql"
+
+
 def test_cap_verifier_requires_a_matching_hit() -> None:
     context = context_fixture().model_copy(update={"caps": ()})
 

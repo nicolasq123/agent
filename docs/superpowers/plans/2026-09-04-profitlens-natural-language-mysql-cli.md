@@ -204,7 +204,7 @@ Run: `cd backend && uv run pytest tests/infrastructure/models/test_intent.py tes
 
 Expected: PASS; recorded prompts contain no SQL, table names, URLs, or secrets.
 
-- [ ] **Step 6: Commit parsers**
+- [x] **Step 6: Commit parsers**
 
 ```bash
 git add backend/src/ad_rca/infrastructure/models backend/tests/infrastructure/models
@@ -230,7 +230,7 @@ git commit -m "feat: parse bounded profit analysis intents"
   `CoreRcaService`, scoped incidents, and honest
   metric-derived price evidence when configuration history is unavailable.
 
-- [ ] **Step 1: Write failing tests for a full requested window and incident scope**
+- [x] **Step 1: Write failing tests for a full requested window and incident scope**
 
 ```python
 def test_core_uses_explicit_window_and_scope() -> None:
@@ -249,13 +249,13 @@ def test_core_uses_explicit_window_and_scope() -> None:
 
 Retain a regression test proving omitted `analysis_window` still selects the last three hours.
 
-- [ ] **Step 2: Run the focused test and verify the constructor rejects new arguments**
+- [x] **Step 2: Run the focused test and verify the constructor rejects new arguments**
 
 Run: `cd backend && uv run pytest tests/application/test_core_service.py -q`
 
 Expected: FAIL with unexpected constructor arguments.
 
-- [ ] **Step 3: Implement explicit window/scope without changing fixture defaults**
+- [x] **Step 3: Implement explicit window/scope without changing fixture defaults**
 
 Filter current rows using the explicit half-open window. Set `DetectionConfig.window_count` to
 the expected hour count and pass `base_scope` into `detect_incident`. Build expected rows for
@@ -266,7 +266,7 @@ Add `scope: SliceKey | None = None` as the final keyword argument to `detect_inc
 the constructed incident's scope to `scope if scope is not None else SliceKey()`. Do not change
 any other incident field or default call site.
 
-- [ ] **Step 4: Write failing tests for measured payout/revenue rate shifts**
+- [x] **Step 4: Write failing tests for measured payout/revenue rate shifts**
 
 ```python
 def test_pricing_verifier_marks_measured_rate_increase_as_likely() -> None:
@@ -283,14 +283,14 @@ def test_pricing_verifier_marks_measured_rate_increase_as_likely() -> None:
     assert result.evidence[0].source.dataset == "performance"
 ```
 
-- [ ] **Step 5: Implement measured-rate candidates without fabricating config history**
+- [x] **Step 5: Implement measured-rate candidates without fabricating config history**
 
 When direct `ConfigChange` evidence exists, preserve current confirmed behavior. Otherwise,
 compare effective payout/conversion and revenue/conversion against baseline, require a material
 20% adverse shift, emit corroborating `performance` evidence, and cap confidence at `LIKELY`.
 Use only existing aggregate values; do not create fake old configuration records.
 
-- [ ] **Step 6: Run core, detection, RCA, and regression tests**
+- [x] **Step 6: Run core, detection, RCA, and regression tests**
 
 Run: `cd backend && uv run pytest tests/application/test_core_service.py tests/detection tests/rca -q && uv run pyright`
 

@@ -94,3 +94,11 @@ def test_candidate_generation_is_stable_and_deduplicated() -> None:
         HypothesisType.TRAFFIC_MIX_SHIFT,
         HypothesisType.TRAFFIC_QUALITY_DEGRADATION,
     )
+
+
+def test_candidate_generation_uses_measured_rate_when_config_history_is_missing() -> None:
+    context = context_fixture().model_copy(update={"config_changes": ()})
+
+    result = generate_candidates(context)
+
+    assert result[0] is HypothesisType.PAYOUT_PRICE_INCREASE
