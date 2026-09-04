@@ -23,6 +23,7 @@ _STAT_COLUMNS = frozenset(
 _PERFORMANCE_SELECT = """dt AS event_hour,
        ader_id AS advertiser_id,
        oid_ AS offer_id,
+       gid AS settlement_offer_id,
        aid AS channel_id,
        country,
        clk_os,
@@ -109,8 +110,8 @@ WHERE dt >= :history_start AND dt < :window_end
   AND (:offer_id IS NULL OR oid_ = :offer_id)
   AND (:channel_id IS NULL OR aid = :channel_id)
   AND (:country IS NULL OR country = :country)
-GROUP BY dt, ader_id, oid_, aid, country, clk_os, carrier
-ORDER BY dt ASC, ader_id ASC, oid_ ASC, aid ASC, country ASC, clk_os ASC, carrier ASC
+GROUP BY dt, ader_id, oid_, gid, aid, country, clk_os, carrier
+ORDER BY dt ASC, ader_id ASC, oid_ ASC, gid ASC, aid ASC, country ASC, clk_os ASC, carrier ASC
 LIMIT 10000""",
         frozenset(
             {

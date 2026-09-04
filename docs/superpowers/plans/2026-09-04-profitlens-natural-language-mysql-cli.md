@@ -398,7 +398,7 @@ Run: `cd backend && uv run pytest tests/infrastructure/database -q && uv run ruf
 
 Expected: PASS; existing prohibited-query tests remain green.
 
-- [ ] **Step 7: Commit the catalog**
+- [x] **Step 7: Commit the catalog**
 
 ```bash
 git add backend/src/ad_rca/infrastructure/database backend/tests/infrastructure/database
@@ -422,7 +422,7 @@ git commit -m "feat: add fixed ADN MySQL query catalog"
   ScopeDiscovery`, and a populated
   `FixtureRepository` compatible with the existing core.
 
-- [ ] **Step 1: Write failing deterministic scope-ranking tests**
+- [x] **Step 1: Write failing deterministic scope-ranking tests**
 
 ```python
 def test_discovery_selects_the_largest_loss_dimension() -> None:
@@ -442,7 +442,7 @@ def test_discovery_selects_the_largest_loss_dimension() -> None:
 Tie-break in the stable order advertiser, country, channel, offer only after comparing loss;
 ignore candidates with fewer than four comparable historical slots.
 
-- [ ] **Step 2: Write failing loader tests with recording readers**
+- [x] **Step 2: Write failing loader tests with recording readers**
 
 ```python
 @pytest.mark.anyio
@@ -458,19 +458,19 @@ For an unscoped intent, assert four candidate reads and four time-series reads f
 scoped performance read and only relevant DB40 evidence reads. Assert all parameters equal
 validated intent values and the complete run stays below the 20-query budget.
 
-- [ ] **Step 3: Run tests and verify missing loader/discovery failures**
+- [x] **Step 3: Run tests and verify missing loader/discovery failures**
 
 Run: `cd backend && uv run pytest tests/application/test_scope_discovery.py tests/data/test_mysql_snapshot.py -q`
 
 Expected: FAIL because modules do not exist.
 
-- [ ] **Step 4: Implement typed DB evidence models**
+- [x] **Step 4: Implement typed DB evidence models**
 
 Add frozen `SettlementObservation` and `MarginObservation` contracts with record ID, observed
 time, relevant IDs, and numeric settings. Extend `ScenarioBundle` with optional tuples for
 these records. Keep fixture JSON backward compatible through empty defaults.
 
-- [ ] **Step 5: Implement deterministic scope discovery**
+- [x] **Step 5: Implement deterministic scope discovery**
 
 Map each discovery result to timezone-aware aggregate `PerformanceRow` values with sentinel
 IDs only for dimensions absent from that fixed query. For each concrete dimension value,
@@ -478,7 +478,7 @@ compare current-window profit to median matching weekday/hour history and rank p
 Return a typed `ScopeDiscovery` containing requested scope, selected scope, loss, and source
 dimension. Raise `NoAnalyzableDataError` when no candidate has enough data.
 
-- [ ] **Step 6: Implement snapshot loading and row validation**
+- [x] **Step 6: Implement snapshot loading and row validation**
 
 ```python
 @dataclass(frozen=True)
@@ -502,13 +502,13 @@ values using `STAT_TIMEZONE`, convert them to the intent timezone, and reject ma
 Map `cov` to conversions and retain `cov_aff` in a new optional `settled_conversions` field;
 do not claim it is advertiser approval. Query DB40 only after selecting a bounded scope.
 
-- [ ] **Step 7: Run loader, domain, fixture, and static tests**
+- [x] **Step 7: Run loader, domain, fixture, and static tests**
 
 Run: `cd backend && uv run pytest tests/data tests/application/test_scope_discovery.py tests/domain -q && uv run pyright`
 
 Expected: PASS, including old fixture documents without new evidence fields.
 
-- [ ] **Step 8: Commit snapshot loading**
+- [x] **Step 8: Commit snapshot loading**
 
 ```bash
 git add backend/src/ad_rca/data backend/src/ad_rca/application/scope_discovery.py backend/src/ad_rca/domain/models.py backend/tests/data backend/tests/application/test_scope_discovery.py backend/tests/domain

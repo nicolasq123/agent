@@ -4,7 +4,15 @@ from math import isclose
 import pytest
 from pydantic import ValidationError
 
-from ad_rca.domain.models import MetricSnapshot, SliceKey, TimeWindow
+from ad_rca.domain.models import (
+    MarginObservation,
+    MetricSnapshot,
+    ScenarioBundle,
+    ScenarioMetadata,
+    SettlementObservation,
+    SliceKey,
+    TimeWindow,
+)
 
 
 def test_time_window_rejects_timezone_naive_values() -> None:
@@ -66,3 +74,41 @@ def test_metric_snapshot_uses_none_for_zero_denominators() -> None:
     assert snapshot.approval_rate is None
     assert snapshot.epc is None
     assert snapshot.cost_per_click is None
+
+
+def test_scenario_bundle_keeps_database_evidence_backward_compatible() -> None:
+    bundle = ScenarioBundle(
+        metadata=ScenarioMetadata(scenario_id="db", name="DB", timezone="UTC"),
+        performance=(),
+    )
+
+    assert bundle.settlements == ()
+    assert bundle.margins == ()
+
+
+def test_database_evidence_models_are_frozen() -> None:
+    settlement = SettlementObservation(
+        record_id="1",
+        observed_at=datetime(2026, 9, 3, tzinfo=UTC),
+        offer_id="123",
+        channel_id="456",
+        payout=2.5,
+        ratio=80,
+        status=1,
+        inactive=0,
+    )
+    margin = MarginObservation(
+        record_id="2",
+        observed_at=datetime(2026, 9, 3, tzinfo=UTC),
+        advertiser_id="9",
+        offer_id="123",
+        channel_id="456",
+        ratio=30,
+        margin_type=0,
+        status=1,
+        inactive=0,
+    )
+
+    with pytest.raises(ValidationError):
+        settlement.payout = 3  # type: ignore[misc]
+    assert margin.ratio == 30

@@ -53,6 +53,7 @@ def test_performance_queries_are_literal_and_bounded() -> None:
         }
     )
     assert "LIMIT 10000" in scoped.sql.upper()
+    assert "gid AS settlement_offer_id" in scoped.sql
 
     for dimension in ("advertiser", "offer", "channel", "country"):
         candidates = specs[f"scope_candidates_by_{dimension}"]

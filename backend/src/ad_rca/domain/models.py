@@ -63,6 +63,7 @@ class PerformanceRow(StrictModel):
     clicks: int = Field(ge=0)
     conversions: int = Field(ge=0)
     approved_conversions: int = Field(ge=0)
+    settled_conversions: int | None = Field(default=None, ge=0)
     revenue: float
     payout: float
 
@@ -137,6 +138,29 @@ class RoutingChange(StrictModel):
     to_offer_id: str
 
 
+class SettlementObservation(StrictModel):
+    record_id: str
+    observed_at: datetime
+    offer_id: str
+    channel_id: str
+    payout: float
+    ratio: int
+    status: int
+    inactive: int
+
+
+class MarginObservation(StrictModel):
+    record_id: str
+    observed_at: datetime
+    advertiser_id: str
+    offer_id: str
+    channel_id: str
+    ratio: int
+    margin_type: int
+    status: int
+    inactive: int
+
+
 class ScenarioMetadata(StrictModel):
     scenario_id: str
     name: str
@@ -152,6 +176,8 @@ class ScenarioBundle(StrictModel):
     postbacks: tuple[PostbackEvent, ...] = ()
     quality_events: tuple[QualityEvent, ...] = ()
     routing_changes: tuple[RoutingChange, ...] = ()
+    settlements: tuple[SettlementObservation, ...] = ()
+    margins: tuple[MarginObservation, ...] = ()
 
 
 class DemoRecipe(StrictModel):
