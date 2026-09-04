@@ -854,7 +854,7 @@ Status on 2026-09-04: not run because this worktree has no production MySQL URLs
 machine cannot reach the production database network. The mocked read-only acceptance passed,
 but it is not a substitute for this gate.
 
-- [ ] **Step 7: Mark the plan only from observed evidence and commit**
+- [x] **Step 7: Mark the plan only from observed evidence and commit**
 
 Check each completed box only after its command succeeds. Do not mark the live DB gate when it
 was simulated. Then run:
