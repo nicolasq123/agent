@@ -596,7 +596,7 @@ Run: `cd backend && uv run pytest tests/application tests/workflow -q && uv run 
 
 Expected: PASS with fixture service regressions green.
 
-- [ ] **Step 6: Commit the service**
+- [x] **Step 6: Commit the service**
 
 ```bash
 git add backend/src/ad_rca/application backend/src/ad_rca/api/dependencies.py backend/tests/application
@@ -619,7 +619,7 @@ git commit -m "feat: orchestrate natural language MySQL investigations"
 - Produces: `profitlens ask`, `profitlens chat`, `profitlens db-check`, Markdown output, and
   injectable input/output boundaries for deterministic CLI tests.
 
-- [ ] **Step 1: Write failing one-shot CLI tests**
+- [x] **Step 1: Write failing one-shot CLI tests**
 
 ```python
 def test_ask_prints_markdown_report(capsys: pytest.CaptureFixture[str]) -> None:
@@ -642,26 +642,26 @@ def test_ask_json_is_machine_readable(capsys: pytest.CaptureFixture[str]) -> Non
     assert json.loads(capsys.readouterr().out)["run"]["report"]
 ```
 
-- [ ] **Step 2: Write failing REPL and DB-check tests**
+- [x] **Step 2: Write failing REPL and DB-check tests**
 
 Inject a line reader returning the sequence `分析昨天利润`, `还有哪些证据？`, `/new`, `/exit`.
 Assert the first line calls `ask`, the second calls `answer` on that session, `/new` clears it,
 and `/exit` performs no query. Assert `db-check` invokes both readers and prints only source
 names and `ok`, never DSNs or secrets.
 
-- [ ] **Step 3: Run CLI tests and verify missing subcommands**
+- [x] **Step 3: Run CLI tests and verify missing subcommands**
 
 Run: `cd backend && uv run pytest tests/test_cli.py tests/presentation/test_markdown.py -q`
 
 Expected: FAIL because the subcommands and renderer are missing.
 
-- [ ] **Step 4: Implement concise Markdown rendering**
+- [x] **Step 4: Implement concise Markdown rendering**
 
 Render requested and selected scope, period, actual/expected/lost profit, ranked conclusions,
 confidence, Evidence IDs, and recommendations. Render insufficient evidence and no-incident
 results explicitly. Never render configuration objects or raw database rows.
 
-- [ ] **Step 5: Implement async-compatible CLI entry points**
+- [x] **Step 5: Implement async-compatible CLI entry points**
 
 Add parsers:
 
@@ -675,13 +675,13 @@ Use `asyncio.run` only at CLI boundaries. `chat` prints a short prompt, treats `
 `/exit` locally, requires an investigation before a follow-up, and catches EOF/interrupt
 without a traceback. Preserve all current commands and their output.
 
-- [ ] **Step 6: Sanitize CLI failures**
+- [x] **Step 6: Sanitize CLI failures**
 
 Map missing settings, intent ambiguity, no data, authentication, timeout, and budget errors to
 short messages and exit code 2. Extend `_safe_error` by exception type; never interpolate DSNs,
 driver exception strings containing URLs, or request parameters.
 
-- [ ] **Step 7: Run all CLI/presentation tests and static checks**
+- [x] **Step 7: Run all CLI/presentation tests and static checks**
 
 Run: `cd backend && uv run pytest tests/test_cli.py tests/presentation -q && uv run ruff check . && uv run pyright`
 
