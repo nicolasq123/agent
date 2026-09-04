@@ -39,7 +39,7 @@
 - Consumes: existing `StrictModel`, `SliceKey`, `TimeWindow`, and `JsonCompletionClient` conventions.
 - Produces: `AnalysisKind`, `AnalysisIntent`, `IntentParser.parse(question: str) -> AnalysisIntent`, and validated DB settings.
 
-- [ ] **Step 1: Write failing contract and configuration tests**
+- [x] **Step 1: Write failing contract and configuration tests**
 
 ```python
 def test_analysis_intent_is_frozen_and_rejects_unknown_fields() -> None:
@@ -63,13 +63,13 @@ def test_readonly_db_requires_both_mysql_urls(monkeypatch: pytest.MonkeyPatch) -
         Settings()
 ```
 
-- [ ] **Step 2: Run the focused tests and verify missing-contract failures**
+- [x] **Step 2: Run the focused tests and verify missing-contract failures**
 
 Run: `cd backend && uv run pytest tests/agent/test_intent.py tests/agent/test_contracts.py -q`
 
 Expected: FAIL because `AnalysisIntent` and the MySQL settings do not exist.
 
-- [ ] **Step 3: Implement strict intent types and parser protocol**
+- [x] **Step 3: Implement strict intent types and parser protocol**
 
 ```python
 class AnalysisKind(StrEnum):
@@ -89,7 +89,7 @@ class IntentParser(Protocol):
         raise NotImplementedError
 ```
 
-- [ ] **Step 4: Add secret-safe DB and timezone settings**
+- [x] **Step 4: Add secret-safe DB and timezone settings**
 
 ```python
 mysql_stat_url: SecretStr | None = None
@@ -110,7 +110,7 @@ def require_readonly_db_urls(self) -> Self:
 
 Keep `.env.example` values blank and document `mysql+asyncmy://` without a real host or credential.
 
-- [ ] **Step 5: Run focused tests and static checking**
+- [x] **Step 5: Run focused tests and static checking**
 
 Run: `cd backend && uv run pytest tests/agent/test_intent.py tests/agent/test_contracts.py -q && uv run pyright`
 

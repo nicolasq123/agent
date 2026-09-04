@@ -1,5 +1,6 @@
 from typing import Protocol
 
+from ad_rca.agent.intent import AnalysisIntent
 from ad_rca.agent.models import (
     InvestigationPlan,
     InvestigationReport,
@@ -8,6 +9,10 @@ from ad_rca.agent.models import (
     QuestionRequest,
     ReportRequest,
 )
+
+
+class IntentParser(Protocol):
+    def parse(self, question: str) -> AnalysisIntent: ...
 
 
 class InvestigationPlanner(Protocol):
