@@ -531,7 +531,7 @@ git commit -m "feat: load bounded RCA snapshots from MySQL"
 - Produces: `NaturalLanguageAnalysisService.ask`, `.answer`, `.check_database`, and
   `build_natural_language_service(settings)`.
 
-- [ ] **Step 1: Write a failing end-to-end service test with fake boundaries**
+- [x] **Step 1: Write a failing end-to-end service test with fake boundaries**
 
 ```python
 @pytest.mark.anyio
@@ -553,13 +553,13 @@ async def test_question_runs_real_workflow_over_loaded_snapshot(tmp_path: Path) 
 Add tests for no incident, no data, database failure, deterministic model fallback, DB checks,
 and a follow-up answer that may cite only Evidence IDs from the current report.
 
-- [ ] **Step 2: Run the focused tests and verify service absence**
+- [x] **Step 2: Run the focused tests and verify service absence**
 
 Run: `cd backend && uv run pytest tests/application/test_natural_language_service.py -q`
 
 Expected: FAIL because the service does not exist.
 
-- [ ] **Step 3: Implement analysis sessions and orchestration**
+- [x] **Step 3: Implement analysis sessions and orchestration**
 
 ```python
 @dataclass(frozen=True)
@@ -583,14 +583,14 @@ existing `InvestigationWorkflow`. Preserve artifact persistence and deterministi
 fallback. Extract the existing Evidence-ID validation into one shared helper instead of
 duplicating or weakening it.
 
-- [ ] **Step 4: Implement dependency construction**
+- [x] **Step 4: Implement dependency construction**
 
 `build_natural_language_service(settings)` must require `DATA_MODE=readonly_db`, unwrap DB URLs
 only at driver construction, build separate stat/config executors with their respective fixed
 catalogs and one shared 20-query `QueryBudget`, and choose DeepSeek or deterministic adapters.
 The existing `build_service` fixture path remains unchanged.
 
-- [ ] **Step 5: Run application and workflow tests**
+- [x] **Step 5: Run application and workflow tests**
 
 Run: `cd backend && uv run pytest tests/application tests/workflow -q && uv run pyright`
 

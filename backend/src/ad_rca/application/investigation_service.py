@@ -111,7 +111,7 @@ class InvestigationService:
         request = QuestionRequest(question=question, report=report)
         try:
             answer = self._composer.answer(request)
-            _validate_answer_evidence(answer, report)
+            validate_answer_evidence(answer, report)
             return answer
         except (ModelUnavailableError, InvalidModelOutputError, ValueError):
             return self._fallback_composer.answer(request)
@@ -169,7 +169,7 @@ def build_fixture_service(
     )
 
 
-def _validate_answer_evidence(answer: QuestionAnswer, report: InvestigationReport) -> None:
+def validate_answer_evidence(answer: QuestionAnswer, report: InvestigationReport) -> None:
     allowed = {
         evidence_id for conclusion in report.conclusions for evidence_id in conclusion.evidence_ids
     }
