@@ -65,6 +65,47 @@ uv run profitlens agent ../fixtures/demo/pricing_error.json --model deepseek
 
 The API key is read as a Pydantic `SecretStr` and is never included in prompts, logs, artifacts, reports, or errors. If the model is unavailable or returns invalid JSON twice, ProfitLens finishes with deterministic planning and a template report marked `generated_without_llm`.
 
+## Run natural-language analysis against MySQL
+
+Provision MySQL users with `SELECT` permission only, then place the connection settings in the
+ignored root `.env`. Replace every bracketed value locally; do not commit the resulting file.
+
+```dotenv
+DATA_MODE=readonly_db
+MYSQL_STAT_URL=mysql+asyncmy://[readonly-user]:[password]@[db20-host]/au_stat
+MYSQL_CONFIG_URL=mysql+asyncmy://[readonly-user]:[password]@[db40-host]/ymgw
+STAT_TIMEZONE=UTC
+CLI_TIMEZONE=Asia/Shanghai
+MODEL_MODE=deepseek
+DEEPSEEK_API_KEY=[your-key]
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+DEEPSEEK_MODEL=deepseek-v4-flash
+```
+
+Check both connections with fixed `SELECT 1` queries, then ask a question:
+
+```bash
+make db-check
+make ask QUESTION='分析昨天 offer 12345 为什么利润下降'
+cd backend && uv run profitlens ask '分析最近3天美国利润下降原因' --json
+uv run profitlens db-check
+uv run profitlens chat
+```
+
+For follow-up questions, run `make chat`. Enter a first analysis question, ask follow-ups against
+its report, use `/new` to clear the current investigation, and `/exit` to leave. Supported time
+ranges include today, yesterday, recent N days, and ISO dates; one request is limited to seven
+days. Input dates use `CLI_TIMEZONE`, while naive DB timestamps use `STAT_TIMEZONE`.
+
+DB20 `au_stat.stat.cov` is the conversion count. `cov_aff` is channel-settled conversion data,
+not advertiser approval data. The DDL does not provide complete price audit history, so a payout
+or revenue rate change inferred from aggregates is corroborating metric evidence (`LIKELY`) unless
+a real audit record is available.
+
+Common failures are reported without URLs or credentials. Authentication/network errors require
+checking access from the production network; “no analyzable data” means the requested period lacks
+enough current data or four comparable historical slots.
+
 ## Database safety
 
 Fixture mode is the default. Database infrastructure is optional and strictly read-only:
@@ -75,7 +116,8 @@ Fixture mode is the default. Database infrastructure is optional and strictly re
 - ClickHouse requests set `readonly=2`; MySQL requires an externally provisioned account with only `SELECT` privileges.
 - The LLM never receives SQL, credentials, connections, or raw performance rows.
 
-Production table mappings are intentionally not guessed. Configure those mappings in the production environment before enabling `DATA_MODE=readonly_db`; the current Phase 2 demo remains in fixture mode.
+MySQL mappings are fixed to the reviewed ADN DB20 `au_stat.stat` and DB40 `ymgw` tables. The
+fixture demo remains the safe offline path when production networking is unavailable.
 
 ## Quality checks
 

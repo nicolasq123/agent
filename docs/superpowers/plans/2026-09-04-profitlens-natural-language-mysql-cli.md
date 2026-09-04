@@ -687,7 +687,7 @@ Run: `cd backend && uv run pytest tests/test_cli.py tests/presentation -q && uv 
 
 Expected: PASS, including old `investigate`, `agent`, `serve`, and `model-check` tests.
 
-- [ ] **Step 8: Commit CLI commands**
+- [x] **Step 8: Commit CLI commands**
 
 ```bash
 git add backend/src/ad_rca/cli.py backend/src/ad_rca/presentation backend/tests/test_cli.py backend/tests/presentation
@@ -708,13 +708,13 @@ git commit -m "feat: add natural language RCA CLI"
 - Consumes: completed CLI commands and current repository tooling.
 - Produces: discoverable local commands and repository-specific contribution guidance.
 
-- [ ] **Step 1: Recheck the root before creating `AGENTS.md`**
+- [x] **Step 1: Recheck the root before creating `AGENTS.md`**
 
 Run: `test ! -e AGENTS.md`
 
 Expected: exit 0. If the file exists, do not overwrite or modify it; omit it from this task.
 
-- [ ] **Step 2: Write failing documentation-command tests**
+- [x] **Step 2: Write failing documentation-command tests**
 
 ```python
 def test_makefile_documents_every_public_target() -> None:
@@ -726,7 +726,7 @@ def test_makefile_documents_every_public_target() -> None:
 Also assert README examples reference real argparse subcommands and never contain a populated
 secret or a database mutation statement.
 
-- [ ] **Step 3: Add actionable comments and targets to Makefile**
+- [x] **Step 3: Add actionable comments and targets to Makefile**
 
 Place a Chinese comment immediately above every existing and new target using the form
 `# target: purpose; usage`. Add:
@@ -744,21 +744,21 @@ db-check:
 
 Document `make ask QUESTION='分析昨天利润为什么下降'`; do not embed credentials.
 
-- [ ] **Step 4: Create the concise contributor guide if absent**
+- [x] **Step 4: Create the concise contributor guide if absent**
 
 Write a 200–400 word `AGENTS.md` titled `Repository Guidelines`. Cover project layout, every
 Make command, Python 3.12/Ruff/100-column/strict-Pyright conventions, pytest naming and
 coverage, commit prefixes observed in history (`feat:`, `fix:`, `test:`, `docs:`, `refactor:`),
 PR evidence, ignored `.env`, local artifacts, and the absolute prohibition on DB writes.
 
-- [ ] **Step 5: Update README operator instructions**
+- [x] **Step 5: Update README operator instructions**
 
 Document safe DB20/DB40 URL configuration, `make db-check`, one-shot usage, REPL commands,
 timezone defaults, JSON output, source limitations, and troubleshooting. State explicitly that
 `cov_aff` is channel-settled conversion data and that price-history conclusions are metric
 corroboration unless a real audit source exists.
 
-- [ ] **Step 6: Run documentation tests and command help**
+- [x] **Step 6: Run documentation tests and command help**
 
 Run: `cd backend && uv run pytest tests/test_documented_commands.py -q && uv run profitlens --help && uv run profitlens ask --help`
 
