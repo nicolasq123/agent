@@ -54,6 +54,46 @@ def test_settings_reject_unknown_timezone() -> None:
         Settings(cli_timezone="Mars/Olympus_Mons")
 
 
+def test_env_example_loads_as_complete_readonly_configuration(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for name in (
+        "DATA_MODE",
+        "MODEL_MODE",
+        "DEEPSEEK_API_KEY",
+        "DEEPSEEK_BASE_URL",
+        "DEEPSEEK_MODEL",
+        "MYSQL_STAT_URL",
+        "MYSQL_CONFIG_URL",
+        "STAT_TIMEZONE",
+        "CLI_TIMEZONE",
+        "MODEL_TIMEOUT_SECONDS",
+        "ARTIFACTS_DIR",
+        "FIXTURE_DIR",
+    ):
+        monkeypatch.delenv(name, raising=False)
+
+    settings = Settings(_env_file="../.env.example")  # type: ignore[call-arg]
+
+    assert settings.data_mode == "readonly_db"
+    assert settings.model_mode == "deepseek"
+    assert settings.deepseek_api_key is not None
+    assert settings.deepseek_api_key.get_secret_value() == "replace-with-your-deepseek-api-key"
+    assert settings.mysql_stat_url is not None
+    assert settings.mysql_stat_url.get_secret_value() == (
+        "mysql+asyncmy://readonly_user:replace-with-password@"
+        "db20.example.internal:3306/au_stat?charset=utf8mb4"
+    )
+    assert settings.mysql_config_url is not None
+    assert settings.mysql_config_url.get_secret_value() == (
+        "mysql+asyncmy://readonly_user:replace-with-password@"
+        "db40.example.internal:3306/ymgw?charset=utf8mb4"
+    )
+    assert settings.model_timeout_seconds == 30
+    assert settings.artifacts_dir.as_posix() == "artifacts"
+    assert settings.fixture_dir.as_posix() == "../fixtures/demo"
+
+
 def test_plan_rejects_more_than_three_hypotheses() -> None:
     with pytest.raises(ValidationError):
         InvestigationPlan(
