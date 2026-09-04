@@ -116,7 +116,7 @@ Run: `cd backend && uv run pytest tests/agent/test_intent.py tests/agent/test_co
 
 Expected: PASS with no type errors.
 
-- [ ] **Step 6: Commit the contracts**
+- [x] **Step 6: Commit the contracts**
 
 ```bash
 git add .env.example backend/src/ad_rca/agent backend/src/ad_rca/config.py backend/tests/agent
@@ -136,7 +136,7 @@ git commit -m "feat: define natural language analysis intent"
 - Consumes: `AnalysisIntent`, `AnalysisKind`, `JsonCompletionClient`.
 - Produces: `RuleIntentParser`, `DeepSeekIntentParser`, and `IntentParseError`.
 
-- [ ] **Step 1: Write failing tests for dates, scopes, isolation, repair, and fallback**
+- [x] **Step 1: Write failing tests for dates, scopes, isolation, repair, and fallback**
 
 ```python
 NOW = datetime(2026, 9, 4, 15, 0, tzinfo=ZoneInfo("Asia/Shanghai"))
@@ -167,13 +167,13 @@ def test_deepseek_prompt_contains_no_sql_schema_or_secret() -> None:
 Also assert one repair attempt for malformed JSON, rejection of a future/over-seven-day range,
 and fallback to the rule parser on model unavailability.
 
-- [ ] **Step 2: Run the focused test and confirm adapter failures**
+- [x] **Step 2: Run the focused test and confirm adapter failures**
 
 Run: `cd backend && uv run pytest tests/infrastructure/models/test_intent.py -q`
 
 Expected: FAIL because intent parsers are missing.
 
-- [ ] **Step 3: Implement deterministic parsing**
+- [x] **Step 3: Implement deterministic parsing**
 
 Support `昨天`, `今天`, `最近N天`, ISO dates, `offer|oid`, `渠道|aid`, `广告主|ader`,
 two-letter countries, and the initial `美国 -> US` alias. Anchor all relative dates with an
@@ -191,14 +191,14 @@ class RuleIntentParser:
 Its `parse(question: str) -> AnalysisIntent` method applies the exact supported phrase and
 validation rules above and constructs the frozen contract directly.
 
-- [ ] **Step 4: Implement bounded DeepSeek parsing**
+- [x] **Step 4: Implement bounded DeepSeek parsing**
 
 Ask for JSON matching a private strict `IntentDraft` containing only `start`, `end`, and the
 four allowed dimensions. Include the injected current timestamp and default rules in the
 system prompt. Validate the draft, perform one correction request on invalid output, and call
 `RuleIntentParser` on `ModelUnavailableError` or repeated invalid output.
 
-- [ ] **Step 5: Run model tests and verify prompt isolation**
+- [x] **Step 5: Run model tests and verify prompt isolation**
 
 Run: `cd backend && uv run pytest tests/infrastructure/models/test_intent.py tests/infrastructure/models/test_deepseek.py -q && uv run pyright`
 
