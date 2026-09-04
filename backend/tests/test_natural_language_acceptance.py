@@ -108,8 +108,8 @@ def _service(
     config_client = RecordingClient()
     budget = QueryBudget(max_queries=20)
     loader = MySqlSnapshotLoader(
-        ReadonlyMySqlExecutor(stat_client, stat_query_specs(), budget),
-        ReadonlyMySqlExecutor(config_client, config_query_specs(), budget),
+        ReadonlyMySqlExecutor(stat_client, stat_query_specs(), budget, auto_query_mode=1),
+        ReadonlyMySqlExecutor(config_client, config_query_specs(), budget, auto_query_mode=1),
         stat_timezone="Asia/Shanghai",
         query_budget=budget,
     )

@@ -72,6 +72,8 @@ ignored root `.env`. Replace every bracketed value locally; do not commit the re
 
 ```dotenv
 DATA_MODE=readonly_db
+# 1 自动执行只读 SQL；其他值在每条查询执行前要求人工批准
+AUTO_QUERY_MODE=0
 MYSQL_STAT_URL=[DB20 read-only SQLAlchemy DSN ending in /au_stat]
 MYSQL_CONFIG_URL=[DB40 read-only SQLAlchemy DSN ending in /ymgw]
 STAT_TIMEZONE=UTC
@@ -91,6 +93,10 @@ cd backend && uv run profitlens ask '分析最近3天美国利润下降原因' -
 uv run profitlens db-check
 uv run profitlens chat
 ```
+
+With the safe default `AUTO_QUERY_MODE=0`, the CLI prints each fixed SQL statement and its bound
+parameters to stderr; enter `y` to execute it. Set `AUTO_QUERY_MODE=1` only when unattended,
+automatic execution of validated read-only queries is intended. Any other value remains manual.
 
 For follow-up questions, run `make chat`. Enter a first analysis question, ask follow-ups against
 its report, use `/new` to clear the current investigation, and `/exit` to leave. Supported time

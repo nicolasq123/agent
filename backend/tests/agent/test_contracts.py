@@ -11,12 +11,19 @@ def test_settings_default_to_fixture_and_fake_model(monkeypatch: pytest.MonkeyPa
     monkeypatch.delenv("MODEL_MODE", raising=False)
     monkeypatch.delenv("DATA_MODE", raising=False)
 
-    settings = Settings()
+    settings = Settings(_env_file=None)  # type: ignore[call-arg]
 
     assert settings.data_mode == "fixture"
     assert settings.model_mode == "fake"
     assert settings.deepseek_base_url == "https://api.deepseek.com"
     assert settings.deepseek_model == "deepseek-v4-flash"
+    assert settings.auto_query_mode == 0
+
+
+def test_auto_query_mode_one_enables_automatic_queries() -> None:
+    settings = Settings(_env_file=None, auto_query_mode=1)  # type: ignore[call-arg]
+
+    assert settings.auto_query_mode == 1
 
 
 def test_real_model_requires_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -70,6 +77,7 @@ def test_env_example_loads_as_complete_readonly_configuration(
         "MODEL_TIMEOUT_SECONDS",
         "ARTIFACTS_DIR",
         "FIXTURE_DIR",
+        "AUTO_QUERY_MODE",
     ):
         monkeypatch.delenv(name, raising=False)
 
@@ -92,6 +100,7 @@ def test_env_example_loads_as_complete_readonly_configuration(
     assert settings.model_timeout_seconds == 30
     assert settings.artifacts_dir.as_posix() == "artifacts"
     assert settings.fixture_dir.as_posix() == "../fixtures/demo"
+    assert settings.auto_query_mode == 0
 
 
 def test_plan_rejects_more_than_three_hypotheses() -> None:

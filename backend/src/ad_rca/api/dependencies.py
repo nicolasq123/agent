@@ -57,10 +57,16 @@ def build_natural_language_service(
 
     budget = QueryBudget(max_queries=20)
     stat_reader = create_mysql_executor(
-        configured.mysql_stat_url.get_secret_value(), stat_query_specs(), budget
+        configured.mysql_stat_url.get_secret_value(),
+        stat_query_specs(),
+        budget,
+        auto_query_mode=configured.auto_query_mode,
     )
     config_reader = create_mysql_executor(
-        configured.mysql_config_url.get_secret_value(), config_query_specs(), budget
+        configured.mysql_config_url.get_secret_value(),
+        config_query_specs(),
+        budget,
+        auto_query_mode=configured.auto_query_mode,
     )
     loader = MySqlSnapshotLoader(
         stat_reader,

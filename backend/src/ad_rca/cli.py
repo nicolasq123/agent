@@ -153,6 +153,7 @@ def _agent(
         print(f"scenario file not found: {fixture}", file=sys.stderr)
         return 2
     settings = Settings(
+        data_mode="fixture",
         fixture_dir=fixture.parent,
         artifacts_dir=artifacts_dir,
         model_mode=model,
@@ -192,7 +193,11 @@ def _serve(
     port: int,
     runner: ServerRunner,
 ) -> int:
-    settings = Settings(fixture_dir=fixture_dir, artifacts_dir=artifacts_dir)
+    settings = Settings(
+        data_mode="fixture",
+        fixture_dir=fixture_dir,
+        artifacts_dir=artifacts_dir,
+    )
     runner(create_app(build_service(settings)), host, port)
     return 0
 

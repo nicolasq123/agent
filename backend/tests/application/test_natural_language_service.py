@@ -264,7 +264,14 @@ def test_dependency_builder_shares_one_query_budget(
 ) -> None:
     created: list[tuple[str, object]] = []
 
-    def fake_create(url: str, specs: object, budget: object) -> EmptyQueryReader:
+    def fake_create(
+        url: str,
+        specs: object,
+        budget: object,
+        *,
+        auto_query_mode: int,
+    ) -> EmptyQueryReader:
+        assert auto_query_mode == 0
         created.append((url, budget))
         return EmptyQueryReader()
 
@@ -274,6 +281,7 @@ def test_dependency_builder_shares_one_query_budget(
         model_mode="fake",
         mysql_stat_url=SecretStr("mysql+asyncmy://db20/au_stat"),
         mysql_config_url=SecretStr("mysql+asyncmy://db40/ymgw"),
+        auto_query_mode=0,
         artifacts_dir=tmp_path,
     )
 

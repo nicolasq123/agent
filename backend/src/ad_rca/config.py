@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     stat_timezone: str = "UTC"
     cli_timezone: str = "Asia/Shanghai"
     model_timeout_seconds: float = Field(default=30.0, gt=0, le=120)
+    auto_query_mode: int = 0
     artifacts_dir: Path = Path("artifacts")
     fixture_dir: Path = Path("../fixtures/demo")
 
