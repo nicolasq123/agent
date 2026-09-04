@@ -864,7 +864,7 @@ git add backend/tests/test_natural_language_acceptance.py docs/superpowers/plans
 git commit -m "test: verify natural language MySQL RCA workflow"
 ```
 
-- [ ] **Step 8: Push the verified branch**
+- [x] **Step 8: Push the verified branch**
 
 Run: `git status --short && git log --oneline --decorate -12 && git push origin HEAD`
 
