@@ -66,6 +66,11 @@ class ReadonlyMySqlExecutor:
         rows = await self._client.fetch_all(spec.sql, parameters, spec.timeout_seconds)
         return tuple(rows)
 
+    async def check(self) -> None:
+        rows = await self.query("health", {})
+        if not rows or rows[0].get("ok") != 1:
+            raise RuntimeError("MySQL read check returned an invalid result")
+
 
 def create_mysql_executor(
     url: str,

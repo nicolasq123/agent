@@ -86,7 +86,9 @@ def validate_readonly_sql(
         if table.name and table.name.lower() not in cte_names
     }
     allowed_table_names = {name.lower() for name in allowed_tables}
-    if not table_names or not table_names.issubset(allowed_table_names):
+    if table_names and not table_names.issubset(allowed_table_names):
+        raise ReadonlySqlError("query table is outside the allowlist")
+    if not table_names and allowed_table_names:
         raise ReadonlySqlError("query table is outside the allowlist")
 
     column_names = {column.name.lower() for column in expression.find_all(exp.Column)}

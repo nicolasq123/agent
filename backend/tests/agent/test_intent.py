@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from pydantic import ValidationError
@@ -12,8 +12,8 @@ def test_analysis_intent_is_frozen_and_rejects_unknown_fields() -> None:
         question="分析昨天 offer 12345 为什么利润下降",
         kind=AnalysisKind.PROFIT_RCA,
         window=TimeWindow(
-            start=datetime(2026, 9, 3, tzinfo=timezone.utc),
-            end=datetime(2026, 9, 4, tzinfo=timezone.utc),
+            start=datetime(2026, 9, 3, tzinfo=UTC),
+            end=datetime(2026, 9, 4, tzinfo=UTC),
         ),
         scope=SliceKey(offer_id="12345"),
         timezone="Asia/Shanghai",
@@ -31,7 +31,7 @@ def test_analysis_intent_rejects_blank_question() -> None:
         AnalysisIntent(
             question="",
             window=TimeWindow(
-                start=datetime(2026, 9, 3, tzinfo=timezone.utc),
-                end=datetime(2026, 9, 4, tzinfo=timezone.utc),
+                start=datetime(2026, 9, 3, tzinfo=UTC),
+                end=datetime(2026, 9, 4, tzinfo=UTC),
             ),
         )

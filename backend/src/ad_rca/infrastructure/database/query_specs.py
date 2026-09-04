@@ -10,8 +10,8 @@ class QuerySpec(StrictModel):
     name: str
     dialect: Literal["mysql", "clickhouse"]
     sql: str
-    allowed_tables: frozenset[str] = Field(min_length=1)
-    allowed_columns: frozenset[str] = Field(min_length=1)
+    allowed_tables: frozenset[str] = frozenset()
+    allowed_columns: frozenset[str] = frozenset()
     parameters: frozenset[str] = frozenset()
     timeout_seconds: float = Field(default=10.0, gt=0, le=10)
     max_result_rows: int = Field(default=10_000, ge=1, le=10_000)

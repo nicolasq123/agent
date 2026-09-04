@@ -38,6 +38,22 @@ class RecordingMySqlClient:
         return ({"offer_id": "offer-a"},)
 
 
+class InvalidHealthMySqlClient(RecordingMySqlClient):
+    async def fetch_all(
+        self, query: str, parameters: Mapping[str, object], timeout_seconds: float
+    ) -> Sequence[Mapping[str, object]]:
+        self.calls.append((query, parameters, timeout_seconds))
+        return ({"ok": 0},)
+
+
+class ValidHealthMySqlClient(RecordingMySqlClient):
+    async def fetch_all(
+        self, query: str, parameters: Mapping[str, object], timeout_seconds: float
+    ) -> Sequence[Mapping[str, object]]:
+        self.calls.append((query, parameters, timeout_seconds))
+        return ({"ok": 1},)
+
+
 def _spec(dialect: Literal["mysql", "clickhouse"]) -> QuerySpec:
     return QuerySpec(
         name="performance",
@@ -109,3 +125,35 @@ async def test_mysql_rejects_unknown_queries_and_parameter_mismatch() -> None:
         await executor.query("unknown", {})
     with pytest.raises(ValueError, match="parameters"):
         await executor.query("performance", {"unexpected": 1})
+
+
+@pytest.mark.anyio
+async def test_mysql_check_uses_only_the_fixed_health_query() -> None:
+    health = QuerySpec(
+        name="health",
+        dialect="mysql",
+        sql="SELECT 1 AS ok LIMIT 1",
+        allowed_tables=frozenset(),
+        allowed_columns=frozenset(),
+    )
+    client = ValidHealthMySqlClient()
+    executor = ReadonlyMySqlExecutor(client, {"health": health})
+
+    await executor.check()
+
+    assert client.calls == [("SELECT 1 AS ok LIMIT 1", {}, 10.0)]
+
+
+@pytest.mark.anyio
+async def test_mysql_check_rejects_an_invalid_health_result() -> None:
+    health = QuerySpec(
+        name="health",
+        dialect="mysql",
+        sql="SELECT 1 AS ok LIMIT 1",
+        allowed_tables=frozenset(),
+        allowed_columns=frozenset(),
+    )
+    executor = ReadonlyMySqlExecutor(InvalidHealthMySqlClient(), {"health": health})
+
+    with pytest.raises(RuntimeError, match="invalid result"):
+        await executor.check()

@@ -296,7 +296,7 @@ Run: `cd backend && uv run pytest tests/application/test_core_service.py tests/d
 
 Expected: PASS including all Phase 1 scenarios.
 
-- [ ] **Step 7: Commit the core extension**
+- [x] **Step 7: Commit the core extension**
 
 ```bash
 git add backend/src/ad_rca/domain backend/src/ad_rca/detection backend/src/ad_rca/application/core_service.py backend/src/ad_rca/rca backend/tests/application backend/tests/detection backend/tests/rca
@@ -318,7 +318,7 @@ git commit -m "feat: analyze explicit profit windows and measured rates"
 - Produces: `stat_query_specs()`, `config_query_specs()`, and
   `ReadonlyMySqlExecutor.check() -> None`.
 
-- [ ] **Step 1: Write failing catalog tests**
+- [x] **Step 1: Write failing catalog tests**
 
 ```python
 def test_catalog_contains_only_fixed_bounded_selects() -> None:
@@ -346,13 +346,13 @@ def test_catalog_contains_only_fixed_bounded_selects() -> None:
 Also instantiate every spec so sqlglot validates all table and column allowlists, and assert
 that no SQL string contains a wildcard or a prohibited statement node.
 
-- [ ] **Step 2: Run tests and verify the catalog is missing**
+- [x] **Step 2: Run tests and verify the catalog is missing**
 
 Run: `cd backend && uv run pytest tests/infrastructure/database/test_mysql_catalog.py -q`
 
 Expected: FAIL because `mysql_catalog` does not exist.
 
-- [ ] **Step 3: Implement literal performance query specs**
+- [x] **Step 3: Implement literal performance query specs**
 
 `performance_scoped` selects and aggregates these exact columns from `au_stat.stat`:
 `dt`, `ader_id`, `oid_`, `aid`, `country`, `clk_os`, `carrier`, `clk`, `cov`, `cov_aff`,
@@ -367,7 +367,7 @@ slots with `-1` and country slots with `__none__`), then groups their current an
 same-slot history by hour and dimension. With a maximum seven-day requested window, this is at
 most 9,072 rows. Do not interpolate a dimension supplied by a user or model.
 
-- [ ] **Step 4: Implement DB40 evidence specs**
+- [x] **Step 4: Implement DB40 evidence specs**
 
 Use fixed, parameterized selects over:
 
@@ -381,7 +381,7 @@ ymgw.redirect: id, ader_id, oid, aid, toid, inactive, ut
 Filter by the selected scope and relevant time where a timestamp exists. `health` is exactly
 `SELECT 1 AS ok LIMIT 1`. All result limits are literals at or below 10,000.
 
-- [ ] **Step 5: Add a guarded health method**
+- [x] **Step 5: Add a guarded health method**
 
 ```python
 async def check(self) -> None:
@@ -392,7 +392,7 @@ async def check(self) -> None:
 
 This method must not expose the engine, DSN, or generic execution.
 
-- [ ] **Step 6: Run database tests and static checks**
+- [x] **Step 6: Run database tests and static checks**
 
 Run: `cd backend && uv run pytest tests/infrastructure/database -q && uv run ruff check . && uv run pyright`
 
