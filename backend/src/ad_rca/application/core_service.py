@@ -84,9 +84,7 @@ class CoreRcaService:
                 for row in all_rows
                 if self._analysis_window.start <= row.event_hour < self._analysis_window.end
             )
-            history = tuple(
-                row for row in all_rows if row.event_hour < self._analysis_window.start
-            )
+            history = tuple(row for row in all_rows if row.event_hour < self._analysis_window.start)
             current_hours = sorted({row.event_hour for row in current})
             expected_hours = int(
                 (self._analysis_window.end - self._analysis_window.start).total_seconds() // 3600

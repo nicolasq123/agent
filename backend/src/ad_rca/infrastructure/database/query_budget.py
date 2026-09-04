@@ -25,3 +25,7 @@ class QueryBudget:
                     f"query budget exceeded: maximum {self._max_queries} queries"
                 )
             self._used += 1
+
+    def reset(self) -> None:
+        with self._lock:
+            self._used = 0

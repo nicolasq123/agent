@@ -1,12 +1,14 @@
 from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from zoneinfo import ZoneInfo
 
 import pytest
 
 from ad_rca.agent.intent import AnalysisIntent
 from ad_rca.data.mysql_snapshot import MySqlSnapshotLoader
 from ad_rca.domain.models import SliceKey, TimeWindow
+from ad_rca.infrastructure.database.query_budget import QueryBudget
 
 START = datetime(2026, 9, 3, 10, tzinfo=UTC)
 
@@ -168,3 +170,43 @@ async def test_loader_accepts_mysql_decimal_aggregates() -> None:
     mapped = snapshot.repository.all_performance()[0]
     assert mapped.clicks == 100
     assert mapped.revenue == 1000.25
+
+
+@pytest.mark.anyio
+async def test_loader_resets_the_shared_budget_for_each_analysis() -> None:
+    budget = QueryBudget(max_queries=20)
+    budget.consume()
+    stat = RecordingReader({"performance_scoped": (_performance_row(START),)})
+    loader = MySqlSnapshotLoader(
+        stat,
+        RecordingReader({}),
+        stat_timezone="UTC",
+        query_budget=budget,
+    )
+
+    await loader.load(_intent(SliceKey(country="US")))
+
+    assert budget.used == 0
+
+
+@pytest.mark.anyio
+async def test_loader_converts_query_bounds_to_naive_database_timezone() -> None:
+    cli_timezone = ZoneInfo("Asia/Shanghai")
+    intent = AnalysisIntent(
+        question="分析昨天美国利润",
+        window=TimeWindow(
+            start=datetime(2026, 9, 3, tzinfo=cli_timezone),
+            end=datetime(2026, 9, 4, tzinfo=cli_timezone),
+        ),
+        scope=SliceKey(country="US"),
+        timezone="Asia/Shanghai",
+    )
+    stat = RecordingReader({"performance_scoped": ()})
+    loader = MySqlSnapshotLoader(stat, RecordingReader({}), stat_timezone="UTC")
+
+    await loader.load(intent)
+
+    parameters = stat.calls[0][1]
+    assert parameters["window_end"] == datetime(2026, 9, 3, 16)
+    assert isinstance(parameters["window_end"], datetime)
+    assert parameters["window_end"].tzinfo is None

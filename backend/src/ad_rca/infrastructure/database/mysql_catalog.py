@@ -134,9 +134,7 @@ LIMIT 10000""",
         specs[f"scope_candidates_by_{name}"] = _candidate_spec(
             f"scope_candidates_by_{name}", column
         )
-        specs[f"performance_by_{name}"] = _series_spec(
-            f"performance_by_{name}", column
-        )
+        specs[f"performance_by_{name}"] = _series_spec(f"performance_by_{name}", column)
     return specs
 
 
@@ -212,9 +210,23 @@ LIMIT 10000""",
             frozenset({"cap", "cap_log", "remain_cap"}),
             frozenset(
                 {
-                    "id", "ader_id", "oid", "aid", "time_typ", "cap_typ", "cap", "tz",
-                    "status", "inactive", "ut", "remain", "usage_percent", "cap_id",
-                    "create_at", "expire_at", "reason",
+                    "id",
+                    "ader_id",
+                    "oid",
+                    "aid",
+                    "time_typ",
+                    "cap_typ",
+                    "cap",
+                    "tz",
+                    "status",
+                    "inactive",
+                    "ut",
+                    "remain",
+                    "usage_percent",
+                    "cap_id",
+                    "create_at",
+                    "expire_at",
+                    "reason",
                 }
             ),
             scope_time,

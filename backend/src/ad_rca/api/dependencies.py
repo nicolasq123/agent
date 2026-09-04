@@ -66,6 +66,7 @@ def build_natural_language_service(
         stat_reader,
         config_reader,
         stat_timezone=configured.stat_timezone,
+        query_budget=budget,
     )
     if configured.model_mode == "deepseek":
         if configured.deepseek_api_key is None:

@@ -17,3 +17,13 @@ def test_query_budget_rejects_twenty_first_query_before_execution() -> None:
 def test_query_budget_rejects_non_positive_limit() -> None:
     with pytest.raises(ValueError):
         QueryBudget(max_queries=0)
+
+
+def test_query_budget_can_start_a_new_independent_analysis() -> None:
+    budget = QueryBudget(max_queries=1)
+    budget.consume()
+
+    budget.reset()
+
+    assert budget.used == 0
+    budget.consume()

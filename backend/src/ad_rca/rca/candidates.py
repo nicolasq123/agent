@@ -42,17 +42,11 @@ def _rate(value: float, conversions: int) -> float | None:
 
 def _increased_materially(current: float | None, baseline: float | None) -> bool:
     return (
-        current is not None
-        and baseline is not None
-        and baseline > 0
-        and current >= baseline * 1.2
+        current is not None and baseline is not None and baseline > 0 and current >= baseline * 1.2
     )
 
 
 def _decreased_materially(current: float | None, baseline: float | None) -> bool:
     return (
-        current is not None
-        and baseline is not None
-        and baseline > 0
-        and current <= baseline * 0.8
+        current is not None and baseline is not None and baseline > 0 and current <= baseline * 0.8
     )

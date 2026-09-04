@@ -72,8 +72,8 @@ ignored root `.env`. Replace every bracketed value locally; do not commit the re
 
 ```dotenv
 DATA_MODE=readonly_db
-MYSQL_STAT_URL=mysql+asyncmy://[readonly-user]:[password]@[db20-host]/au_stat
-MYSQL_CONFIG_URL=mysql+asyncmy://[readonly-user]:[password]@[db40-host]/ymgw
+MYSQL_STAT_URL=[DB20 read-only SQLAlchemy DSN ending in /au_stat]
+MYSQL_CONFIG_URL=[DB40 read-only SQLAlchemy DSN ending in /ymgw]
 STAT_TIMEZONE=UTC
 CLI_TIMEZONE=Asia/Shanghai
 MODEL_MODE=deepseek

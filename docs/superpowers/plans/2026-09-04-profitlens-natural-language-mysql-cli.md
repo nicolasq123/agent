@@ -764,7 +764,7 @@ Run: `cd backend && uv run pytest tests/test_documented_commands.py -q && uv run
 
 Expected: PASS; help lists `ask`, `chat`, and `db-check`.
 
-- [ ] **Step 7: Commit documentation**
+- [x] **Step 7: Commit documentation**
 
 ```bash
 git add Makefile README.md backend/tests/test_documented_commands.py
@@ -784,7 +784,7 @@ git commit -m "docs: explain natural language database workflows"
 - Consumes: the completed contracts, parsers, catalogs, loader, service, and CLI.
 - Produces: reproducible evidence that the user-facing goal and read-only invariants hold.
 
-- [ ] **Step 1: Write the failing acceptance test**
+- [x] **Step 1: Write the failing acceptance test**
 
 Drive `main(["ask", "分析昨天 offer 12345 为什么利润下降", "--json"])` through the real
 rule parser, real query catalog, recording async DB20/DB40 clients, real deterministic core,
@@ -802,20 +802,20 @@ assert secret not in json.dumps(payload)
 Add a second unscoped question proving scope discovery selects the fixture's largest-loss
 offer before investigation, and a scripted `chat` test proving cited follow-up answers.
 
-- [ ] **Step 2: Run acceptance and observe any integration gaps**
+- [x] **Step 2: Run acceptance and observe any integration gaps**
 
 Run: `cd backend && uv run pytest tests/test_natural_language_acceptance.py -q`
 
 Expected before final integration fixes: FAIL only at concrete wiring mismatches exposed by the
 end-to-end path, not because tests bypass missing components.
 
-- [ ] **Step 3: Fix only the observed integration gaps**
+- [x] **Step 3: Fix only the observed integration gaps**
 
 Keep boundaries unchanged: intent remains typed, query names remain fixed, DB clients remain
 read-only, and the LLM remains unable to provide SQL. Add focused regression assertions for
 each wiring correction before changing implementation.
 
-- [ ] **Step 4: Search tracked source for forbidden capabilities and secrets**
+- [x] **Step 4: Search tracked source for forbidden capabilities and secrets**
 
 Run:
 
@@ -828,7 +828,7 @@ git check-ignore .env
 Expected: no executable database mutation in `backend/src`, no tracked real-looking secret,
 and `.env` reported as ignored. Review any match manually rather than accepting the grep alone.
 
-- [ ] **Step 5: Run the complete verification suite**
+- [x] **Step 5: Run the complete verification suite**
 
 Run: `make test && make check && make agent-demo && make model-check`
 
@@ -849,6 +849,10 @@ Expected: both MySQL sources report `ok`; the analysis either returns a cited RC
 incident, or reports insufficient data without exposing DSNs or issuing a write. If the current
 machine cannot reach production, leave this gate unchecked and provide these exact commands
 for execution in the production network.
+
+Status on 2026-09-04: not run because this worktree has no production MySQL URLs and the local
+machine cannot reach the production database network. The mocked read-only acceptance passed,
+but it is not a substitute for this gate.
 
 - [ ] **Step 7: Mark the plan only from observed evidence and commit**
 

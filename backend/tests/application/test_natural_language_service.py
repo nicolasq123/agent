@@ -272,8 +272,8 @@ def test_dependency_builder_shares_one_query_budget(
     settings = Settings(
         data_mode="readonly_db",
         model_mode="fake",
-        mysql_stat_url=SecretStr("mysql+asyncmy://reader:secret@db20/au_stat"),
-        mysql_config_url=SecretStr("mysql+asyncmy://reader:secret@db40/ymgw"),
+        mysql_stat_url=SecretStr("mysql+asyncmy://db20/au_stat"),
+        mysql_config_url=SecretStr("mysql+asyncmy://db40/ymgw"),
         artifacts_dir=tmp_path,
     )
 
@@ -281,7 +281,7 @@ def test_dependency_builder_shares_one_query_budget(
 
     assert isinstance(service, NaturalLanguageAnalysisService)
     assert [url for url, _ in created] == [
-        "mysql+asyncmy://reader:secret@db20/au_stat",
-        "mysql+asyncmy://reader:secret@db40/ymgw",
+        "mysql+asyncmy://db20/au_stat",
+        "mysql+asyncmy://db40/ymgw",
     ]
     assert created[0][1] is created[1][1]

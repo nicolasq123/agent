@@ -18,6 +18,7 @@ from ad_rca.domain.models import (
     SettlementObservation,
     SliceKey,
 )
+from ad_rca.infrastructure.database.query_budget import QueryBudget
 
 _DISCOVERY_DIMENSIONS = {
     "advertiser": "advertiser_id",
@@ -49,29 +50,31 @@ class MySqlSnapshotLoader:
         config_reader: NamedQueryReader,
         *,
         stat_timezone: str,
+        query_budget: QueryBudget | None = None,
     ) -> None:
         self._stat_reader = stat_reader
         self._config_reader = config_reader
         self._stat_timezone = ZoneInfo(stat_timezone)
+        self._query_budget = query_budget
 
     async def check(self) -> None:
         await self._stat_reader.check()
         await self._config_reader.check()
 
     async def load(self, intent: AnalysisIntent) -> LoadedAnalysisSnapshot:
+        if self._query_budget is not None:
+            self._query_budget.reset()
         history_start = intent.window.start - timedelta(weeks=8)
         common: dict[str, object] = {
-            "history_start": history_start,
-            "window_end": intent.window.end,
+            "history_start": self._database_time(history_start),
+            "window_end": self._database_time(intent.window.end),
         }
         if intent.scope.depth:
             selected_scope = intent.scope
         else:
             candidate_values: dict[str, list[object]] = {}
             for query_suffix, dimension in _DISCOVERY_DIMENSIONS.items():
-                rows = await self._stat_reader.query(
-                    f"scope_candidates_by_{query_suffix}", common
-                )
+                rows = await self._stat_reader.query(f"scope_candidates_by_{query_suffix}", common)
                 candidate_values[dimension] = [row["dimension_value"] for row in rows[:6]]
 
             series_by_dimension: dict[str, tuple[PerformanceRow, ...]] = {}
@@ -83,9 +86,7 @@ class MySqlSnapshotLoader:
                 parameters.update(
                     {f"value_{index}": value for index, value in enumerate(padded, start=1)}
                 )
-                rows = await self._stat_reader.query(
-                    f"performance_by_{query_suffix}", parameters
-                )
+                rows = await self._stat_reader.query(f"performance_by_{query_suffix}", parameters)
                 series_by_dimension[dimension] = tuple(
                     self._map_series_row(row, dimension, intent.timezone) for row in rows
                 )
@@ -137,8 +138,8 @@ class MySqlSnapshotLoader:
             "advertiser_id": scope.advertiser_id,
             "offer_id": scope.offer_id,
             "channel_id": scope.channel_id,
-            "evidence_start": evidence_start,
-            "window_end": intent.window.end,
+            "evidence_start": self._database_time(evidence_start),
+            "window_end": self._database_time(intent.window.end),
         }
         settlements: tuple[SettlementObservation, ...] = ()
         margins: tuple[MarginObservation, ...] = ()
@@ -223,9 +224,7 @@ class MySqlSnapshotLoader:
             inactive=_integer(row, "inactive"),
         )
 
-    def _map_margin(
-        self, row: Mapping[str, object], target_timezone: str
-    ) -> MarginObservation:
+    def _map_margin(self, row: Mapping[str, object], target_timezone: str) -> MarginObservation:
         return MarginObservation(
             record_id=_identifier(row, "id"),
             observed_at=self._time(row, "ut", target_timezone),
@@ -271,6 +270,9 @@ class MySqlSnapshotLoader:
         if value.tzinfo is None:
             value = value.replace(tzinfo=self._stat_timezone)
         return value.astimezone(ZoneInfo(target_timezone))
+
+    def _database_time(self, value: datetime) -> datetime:
+        return value.astimezone(self._stat_timezone).replace(tzinfo=None)
 
 
 def _identifier(row: Mapping[str, object], key: str) -> str:

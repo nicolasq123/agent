@@ -37,7 +37,7 @@ class FakeNaturalService:
 
 class FailingNaturalService(FakeNaturalService):
     async def ask(self, question: str) -> NaturalLanguageAnalysis:
-        raise TimeoutError("mysql+asyncmy://reader:database-secret@db20/au_stat")
+        raise TimeoutError("database-secret at db20")
 
 
 def _natural_service(tmp_path: Path) -> FakeNaturalService:
@@ -155,9 +155,7 @@ def test_serve_command_builds_fixture_api_without_starting_real_server(
     assert observed["port"] == 8123
 
 
-def test_ask_prints_markdown_report(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
+def test_ask_prints_markdown_report(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     service = _natural_service(tmp_path)
 
     code = main(
@@ -172,9 +170,7 @@ def test_ask_prints_markdown_report(
     assert service.asked == ["分析昨天 offer 12345 为什么利润下降"]
 
 
-def test_ask_json_is_machine_readable(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
+def test_ask_json_is_machine_readable(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     service = _natural_service(tmp_path)
 
     code = main(

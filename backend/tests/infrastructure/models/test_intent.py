@@ -73,9 +73,7 @@ def test_rule_parser_rejects_unsafe_or_unsupported_ranges(question: str) -> None
 def test_deepseek_parser_returns_validated_intent_without_sensitive_prompt_data() -> None:
     client = RecordingJsonClient(_valid_intent_json())
 
-    intent = DeepSeekIntentParser(client, now=_now).parse(
-        "分析昨天 offer 12345 为什么利润下降"
-    )
+    intent = DeepSeekIntentParser(client, now=_now).parse("分析昨天 offer 12345 为什么利润下降")
 
     assert intent.scope.offer_id == "12345"
     prompt = " ".join(client.requests[0])

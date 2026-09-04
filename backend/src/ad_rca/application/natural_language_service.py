@@ -97,9 +97,7 @@ class NaturalLanguageAnalysisService:
             run=run,
         )
 
-    def answer(
-        self, analysis: NaturalLanguageAnalysis, question: str
-    ) -> QuestionAnswer:
+    def answer(self, analysis: NaturalLanguageAnalysis, question: str) -> QuestionAnswer:
         request = QuestionRequest(question=question, report=analysis.run.report)
         try:
             answer = self._composer.answer(request)

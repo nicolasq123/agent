@@ -71,6 +71,4 @@ def test_config_queries_use_only_documented_adn_tables() -> None:
     assert specs["settlement"].allowed_tables == frozenset({"settlement"})
     assert specs["margin"].allowed_tables == frozenset({"margin"})
     assert specs["routing_changes"].allowed_tables == frozenset({"redirect"})
-    assert specs["cap_observations"].allowed_tables == frozenset(
-        {"cap", "cap_log", "remain_cap"}
-    )
+    assert specs["cap_observations"].allowed_tables == frozenset({"cap", "cap_log", "remain_cap"})

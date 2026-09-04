@@ -37,8 +37,8 @@ def test_readonly_db_requires_both_mysql_urls(monkeypatch: pytest.MonkeyPatch) -
 def test_readonly_db_accepts_separate_secret_urls() -> None:
     settings = Settings(
         data_mode="readonly_db",
-        mysql_stat_url=SecretStr("mysql+asyncmy://reader:stat-secret@db20/au_stat"),
-        mysql_config_url=SecretStr("mysql+asyncmy://reader:config-secret@db40/ymgw"),
+        mysql_stat_url=SecretStr("mysql+asyncmy://db20/au_stat"),
+        mysql_config_url=SecretStr("mysql+asyncmy://db40/ymgw"),
     )
 
     assert settings.mysql_stat_url is not None
