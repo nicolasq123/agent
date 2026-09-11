@@ -59,6 +59,8 @@ def test_performance_queries_are_literal_and_bounded() -> None:
         candidates = specs[f"scope_candidates_by_{dimension}"]
         series = specs[f"performance_by_{dimension}"]
         assert candidates.max_result_rows == 6
+        assert candidates.parameters == frozenset({"window_start", "window_end"})
+        assert "DT >= :WINDOW_START" in candidates.sql.upper()
         assert "LIMIT 6" in candidates.sql.upper()
         assert series.parameters >= frozenset(f"value_{index}" for index in range(1, 7))
         assert "LIMIT 10000" in series.sql.upper()

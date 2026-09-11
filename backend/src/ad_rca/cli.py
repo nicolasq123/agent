@@ -300,7 +300,7 @@ def safe_error_message(error: Exception) -> str:
     if isinstance(error, NoCurrentDataError):
         return "[DATA_NO_CURRENT] 查询时间范围内没有利润数据"
     if isinstance(error, InsufficientComparableHistoryError):
-        return "[DATA_HISTORY_INSUFFICIENT] 当前数据存在，但不足四个历史同期样本"
+        return f"[DATA_HISTORY_INSUFFICIENT] 当前数据存在，但不足四个历史同期样本（{error}）"
     if isinstance(error, NoAnalyzableDataError):
         return "[DATA_NOT_ANALYZABLE] 没有可供分析的数据范围"
     if isinstance(error, AnalysisDataQualityError):

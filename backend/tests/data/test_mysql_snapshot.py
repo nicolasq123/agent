@@ -132,6 +132,11 @@ async def test_loader_discovers_scope_with_bounded_fixed_queries() -> None:
     assert len(stat.calls) == 9
     assert len(config.calls) == 4
     assert len(stat.calls) + len(config.calls) == 13
+    candidate_parameters = dict(stat.calls)["scope_candidates_by_offer"]
+    assert candidate_parameters == {
+        "window_start": START.replace(tzinfo=None),
+        "window_end": (START + timedelta(hours=1)).replace(tzinfo=None),
+    }
     offer_parameters = dict(stat.calls)["performance_by_offer"]
     assert offer_parameters["value_1"] == 12345
     assert tuple(offer_parameters[f"value_{index}"] for index in range(2, 7)) == (

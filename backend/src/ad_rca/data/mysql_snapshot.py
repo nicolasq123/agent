@@ -73,8 +73,14 @@ class MySqlSnapshotLoader:
             selected_scope = intent.scope
         else:
             candidate_values: dict[str, list[object]] = {}
+            candidate_window = {
+                "window_start": self._database_time(intent.window.start),
+                "window_end": common["window_end"],
+            }
             for query_suffix, dimension in _DISCOVERY_DIMENSIONS.items():
-                rows = await self._stat_reader.query(f"scope_candidates_by_{query_suffix}", common)
+                rows = await self._stat_reader.query(
+                    f"scope_candidates_by_{query_suffix}", candidate_window
+                )
                 candidate_values[dimension] = [row["dimension_value"] for row in rows[:6]]
 
             series_by_dimension: dict[str, tuple[PerformanceRow, ...]] = {}

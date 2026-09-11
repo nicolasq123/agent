@@ -34,11 +34,21 @@ def discover_scope(
     rows_by_dimension: Mapping[str, Sequence[PerformanceRow]],
 ) -> ScopeDiscovery:
     ranked: list[tuple[float, int, str, str]] = []
+    diagnostics: list[str] = []
     current_data_found = False
     for dimension in _DIMENSION_ORDER:
         grouped: dict[str, list[PerformanceRow]] = defaultdict(list)
         for row in rows_by_dimension.get(dimension, ()):
             grouped[str(getattr(row, dimension))].append(row)
+        current_count = sum(
+            intent.window.start <= row.event_hour < intent.window.end
+            for rows in grouped.values()
+            for row in rows
+        )
+        history_count = sum(
+            row.event_hour < intent.window.start for rows in grouped.values() for row in rows
+        )
+        diagnostics.append(f"{dimension}:current={current_count},history={history_count}")
         for value, rows in grouped.items():
             if any(intent.window.start <= row.event_hour < intent.window.end for row in rows):
                 current_data_found = True
@@ -49,7 +59,7 @@ def discover_scope(
         if not current_data_found:
             raise NoCurrentDataError("requested window contains no performance rows")
         raise InsufficientComparableHistoryError(
-            "current data exists but fewer than four comparable history slots are available"
+            "no candidate has four comparable same-hour history slots; " + "; ".join(diagnostics)
         )
     loss, _, value, dimension = min(
         ranked,

@@ -68,11 +68,11 @@ def _candidate_spec(name: str, column: str) -> QuerySpec:
        SUM(revenue) AS revenue,
        SUM(payout) AS payout
 FROM au_stat.stat
-WHERE dt >= :history_start AND dt < :window_end
+WHERE dt >= :window_start AND dt < :window_end
 GROUP BY {column}
 ORDER BY SUM(clk) DESC, {column} ASC
 LIMIT 6""",
-        frozenset({"history_start", "window_end"}),
+        frozenset({"window_start", "window_end"}),
         max_result_rows=6,
     )
 
