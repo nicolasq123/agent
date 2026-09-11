@@ -66,8 +66,18 @@ class NaturalLanguageAnalysisService:
     ) -> NaturalLanguageAnalysis:
         _notify(progress, "正在解析问题和时间范围")
         intent = self._parser.parse(question)
+        _notify(
+            progress,
+            f"分析窗口 {intent.window.start.isoformat()} 至 {intent.window.end.isoformat()}；"
+            f"时区 {intent.timezone}；请求范围 {intent.scope.model_dump(exclude_none=True)}",
+        )
         _notify(progress, "正在读取 MySQL 当前数据和历史基线")
         snapshot = await self._loader.load(intent)
+        _notify(
+            progress,
+            f"MySQL 读取完成；分析范围 {snapshot.selected_scope.model_dump(exclude_none=True)}；"
+            f"性能数据 {len(snapshot.repository.all_performance())} 行",
+        )
         _notify(progress, "正在检测异常并计算利润损失")
         core = CoreRcaService(
             snapshot.repository,
@@ -78,6 +88,15 @@ class NaturalLanguageAnalysisService:
         )
         run_id = self._id_factory()
         prepared = core.prepare(snapshot.repository.scenario_id)
+        if prepared.quality is not None:
+            _notify(
+                progress,
+                f"数据质量 status={prepared.quality.status.value}，"
+                f"completeness={prepared.quality.completeness:.2%}，"
+                f"clicks={prepared.quality.total_clicks}，"
+                f"reasons={prepared.quality.reasons or ('none',)}，"
+                f"baseline_errors={prepared.errors or ('none',)}",
+            )
         if prepared.status is RunStatus.DATA_QUALITY_BLOCKED:
             if prepared.errors:
                 current = snapshot.repository.performance(intent.window, snapshot.selected_scope)

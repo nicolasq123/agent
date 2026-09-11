@@ -104,6 +104,7 @@ class CoreRcaService:
                 status=detection.status,
                 incident=None,
                 errors=detection.errors,
+                quality=detection.quality,
                 residual_loss=0.0,
             )
 
@@ -140,6 +141,7 @@ class CoreRcaService:
         return PreparedInvestigation(
             status=detection.status,
             incident=detection.incident,
+            quality=detection.quality,
             attributions=attribution.paths,
             residual_loss=attribution.residual_loss,
             context=context,

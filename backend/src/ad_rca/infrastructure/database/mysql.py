@@ -1,8 +1,10 @@
 # pyright: reportUnknownMemberType=false
 import asyncio
 import json
+import logging
 import sys
 from collections.abc import Callable, Mapping, Sequence
+from time import perf_counter
 from typing import Protocol, TextIO
 
 from sqlalchemy import text
@@ -11,6 +13,8 @@ from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from ad_rca.infrastructure.database.query_budget import QueryBudget
 from ad_rca.infrastructure.database.query_specs import QuerySpec
 from ad_rca.infrastructure.database.sql_guard import validate_readonly_sql
+
+_LOGGER = logging.getLogger("profitlens.sql")
 
 
 class MySqlQueryClient(Protocol):
@@ -115,13 +119,38 @@ class ReadonlyMySqlExecutor:
         if self._auto_query_mode != 1 and not self._approver(name, spec.sql, parameters):
             raise QueryApprovalRejected("query was not approved")
         self._budget.consume()
-        rows = await self._client.fetch_all(spec.sql, parameters, spec.timeout_seconds)
+        started = perf_counter()
+        _LOGGER.info("[SQL] name=%s\n%s", name, spec.sql)
+        _LOGGER.info(
+            "[SQL] parameters=%s",
+            json.dumps(dict(parameters), ensure_ascii=False, default=str),
+        )
+        try:
+            rows = await self._client.fetch_all(spec.sql, parameters, spec.timeout_seconds)
+        except Exception as error:
+            _LOGGER.error(
+                "[SQL] failed name=%s elapsed_ms=%.1f error_type=%s",
+                name,
+                _elapsed_ms(started),
+                type(error).__name__,
+            )
+            raise
+        _LOGGER.info(
+            "[SQL] completed name=%s rows=%d elapsed_ms=%.1f",
+            name,
+            len(rows),
+            _elapsed_ms(started),
+        )
         return tuple(rows)
 
     async def check(self) -> None:
         rows = await self.query("health", {})
         if not rows or rows[0].get("ok") != 1:
             raise RuntimeError("MySQL read check returned an invalid result")
+
+
+def _elapsed_ms(started: float) -> float:
+    return (perf_counter() - started) * 1000
 
 
 def create_mysql_executor(

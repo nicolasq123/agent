@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import json
+import logging
 import sys
 from collections.abc import Callable, Sequence
 from pathlib import Path
@@ -72,6 +73,9 @@ def main(
 ) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
+    if args.command in {"ask", "chat", "db-check"}:
+        logging.basicConfig(level=logging.WARNING, format="%(message)s", force=True)
+        logging.getLogger("profitlens.sql").setLevel(logging.INFO)
     try:
         if args.command == "investigate":
             return _investigate(args.fixture)

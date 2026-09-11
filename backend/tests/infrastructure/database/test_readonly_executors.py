@@ -125,6 +125,21 @@ async def test_mysql_executor_sends_only_validated_fixed_query() -> None:
 
 
 @pytest.mark.anyio
+async def test_mysql_executor_logs_sql_parameters_rows_and_elapsed_time(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    client = RecordingMySqlClient()
+    executor = ReadonlyMySqlExecutor(client, {"performance": _spec("mysql")}, auto_query_mode=1)
+
+    with caplog.at_level("INFO", logger="profitlens.sql"):
+        await executor.query("performance", {"start": "2026-09-03T00:00:00Z"})
+
+    assert "SELECT offer_id" in caplog.text
+    assert '"start": "2026-09-03T00:00:00Z"' in caplog.text
+    assert "rows=1 elapsed_ms=" in caplog.text
+
+
+@pytest.mark.anyio
 async def test_mysql_executor_does_not_call_database_when_query_is_rejected() -> None:
     client = RecordingMySqlClient()
     executor = ReadonlyMySqlExecutor(
