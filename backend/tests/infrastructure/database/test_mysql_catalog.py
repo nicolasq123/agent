@@ -13,6 +13,7 @@ def test_catalog_contains_only_fixed_bounded_selects() -> None:
 
     assert {
         "health",
+        "performance_total",
         "performance_scoped",
         "scope_candidates_by_advertiser",
         "scope_candidates_by_offer",
@@ -54,6 +55,11 @@ def test_performance_queries_are_literal_and_bounded() -> None:
     )
     assert "LIMIT 10000" in scoped.sql.upper()
     assert "gid AS settlement_offer_id" in scoped.sql
+
+    total = specs["performance_total"]
+    assert total.parameters == frozenset({"history_start", "window_end"})
+    assert "GROUP BY dt" in total.sql
+    assert "GROUP BY dt," not in total.sql
 
     for dimension in ("advertiser", "offer", "channel", "country"):
         candidates = specs[f"scope_candidates_by_{dimension}"]

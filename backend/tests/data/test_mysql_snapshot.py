@@ -149,6 +149,36 @@ async def test_loader_discovers_scope_with_bounded_fixed_queries() -> None:
 
 
 @pytest.mark.anyio
+async def test_loader_uses_hourly_totals_when_no_candidate_has_history() -> None:
+    candidate_values = {
+        "advertiser": 9,
+        "offer": 12345,
+        "channel": 678,
+        "country": "US",
+    }
+    responses: dict[str, tuple[Mapping[str, object], ...]] = {
+        f"scope_candidates_by_{name}": ({"dimension_value": value},)
+        for name, value in candidate_values.items()
+    }
+    responses.update(
+        {
+            f"performance_by_{name}": (_series_rows(value, 0)[-1],)
+            for name, value in candidate_values.items()
+        }
+    )
+    responses["performance_total"] = (_performance_row(START),)
+    stat = RecordingReader(responses)
+    loader = MySqlSnapshotLoader(stat, RecordingReader({}), stat_timezone="UTC")
+
+    snapshot = await loader.load(_intent())
+
+    assert snapshot.selected_scope == SliceKey()
+    assert "performance_total" in [name for name, _ in stat.calls]
+    assert "performance_scoped" not in [name for name, _ in stat.calls]
+    assert snapshot.repository.all_performance()[0].advertiser_id == "9"
+
+
+@pytest.mark.anyio
 async def test_loader_check_checks_both_sources() -> None:
     stat = RecordingReader({})
     config = RecordingReader({})

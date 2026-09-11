@@ -101,6 +101,27 @@ LIMIT 10000""",
 
 def stat_query_specs() -> Mapping[str, QuerySpec]:
     specs: dict[str, QuerySpec] = {"health": _HEALTH}
+    specs["performance_total"] = _stat_spec(
+        "performance_total",
+        """SELECT dt AS event_hour,
+       '__all__' AS advertiser_id,
+       '__all__' AS offer_id,
+       '__all__' AS channel_id,
+       '__all__' AS country,
+       '__all__' AS clk_os,
+       '__all__' AS carrier,
+       SUM(clk) AS clicks,
+       SUM(cov) AS conversions,
+       SUM(cov_aff) AS settled_conversions,
+       SUM(revenue) AS revenue,
+       SUM(payout) AS payout
+FROM au_stat.stat
+WHERE dt >= :history_start AND dt < :window_end
+GROUP BY dt
+ORDER BY dt ASC
+LIMIT 10000""",
+        frozenset({"history_start", "window_end"}),
+    )
     specs["performance_scoped"] = _stat_spec(
         "performance_scoped",
         f"""SELECT {_PERFORMANCE_SELECT}

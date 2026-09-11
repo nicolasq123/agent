@@ -108,9 +108,9 @@ class MySqlSnapshotLoader:
             "channel_id": selected_scope.channel_id,
             "country": selected_scope.country,
         }
-        performance_rows = await self._stat_reader.query(
-            "performance_scoped", performance_parameters
-        )
+        query_name = "performance_scoped" if selected_scope.depth else "performance_total"
+        query_parameters = performance_parameters if selected_scope.depth else common
+        performance_rows = await self._stat_reader.query(query_name, query_parameters)
         performance = tuple(
             self._map_performance_row(row, intent.timezone) for row in performance_rows
         )
