@@ -4,7 +4,8 @@ import pytest
 
 from ad_rca.agent.intent import AnalysisIntent
 from ad_rca.application.scope_discovery import (
-    NoAnalyzableDataError,
+    InsufficientComparableHistoryError,
+    NoCurrentDataError,
     discover_scope,
 )
 from ad_rca.domain.models import PerformanceRow, SliceKey, TimeWindow
@@ -90,8 +91,18 @@ def test_discovery_accepts_comparable_scope_without_profit_loss() -> None:
 def test_discovery_rejects_candidates_without_four_history_slots() -> None:
     rows = _series("offer_id", "12345", loss=900)
 
-    with pytest.raises(NoAnalyzableDataError):
+    with pytest.raises(InsufficientComparableHistoryError):
         discover_scope(
             intent=_intent(),
             rows_by_dimension={"offer_id": rows[-4:]},
+        )
+
+
+def test_discovery_distinguishes_missing_current_data() -> None:
+    rows = _series("offer_id", "12345", loss=900)
+
+    with pytest.raises(NoCurrentDataError):
+        discover_scope(
+            intent=_intent(),
+            rows_by_dimension={"offer_id": rows[:-1]},
         )

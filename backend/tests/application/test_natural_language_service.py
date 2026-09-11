@@ -13,7 +13,10 @@ from ad_rca.agent.models import (
     QuestionRequest,
 )
 from ad_rca.api.dependencies import build_natural_language_service
-from ad_rca.application.natural_language_service import NaturalLanguageAnalysisService
+from ad_rca.application.natural_language_service import (
+    AnalysisDataQualityError,
+    NaturalLanguageAnalysisService,
+)
 from ad_rca.application.scope_discovery import NoAnalyzableDataError
 from ad_rca.config import Settings
 from ad_rca.data.fixture_repository import FixtureRepository
@@ -84,7 +87,7 @@ def _intent() -> AnalysisIntent:
     )
 
 
-def _snapshot(*, current_profit: float = 100) -> LoadedAnalysisSnapshot:
+def _snapshot(*, current_profit: float = 100, current_hours: int = 3) -> LoadedAnalysisSnapshot:
     def row(event_hour: datetime, profit: float) -> PerformanceRow:
         return PerformanceRow(
             event_hour=event_hour,
@@ -104,7 +107,9 @@ def _snapshot(*, current_profit: float = 100) -> LoadedAnalysisSnapshot:
         for hour in range(3)
         for week in range(1, 9)
     )
-    current = tuple(row(START + timedelta(hours=hour), current_profit) for hour in range(3))
+    current = tuple(
+        row(START + timedelta(hours=hour), current_profit) for hour in range(current_hours)
+    )
     repository = FixtureRepository(
         ScenarioBundle(
             metadata=ScenarioMetadata(
@@ -165,6 +170,20 @@ async def test_no_incident_returns_an_explicit_report(tmp_path: Path) -> None:
     assert analysis.run.result.incident is None
     assert analysis.run.report.conclusions == ()
     assert "未检测到" in analysis.run.report.summary
+
+
+@pytest.mark.anyio
+async def test_incomplete_current_window_returns_data_quality_error(tmp_path: Path) -> None:
+    service = NaturalLanguageAnalysisService(
+        parser=FixedIntentParser(_intent()),
+        loader=FakeSnapshotLoader(_snapshot(current_hours=2)),
+        planner=FakePlanner(),
+        composer=TemplateReportComposer(),
+        artifact_store=ArtifactStore(tmp_path),
+    )
+
+    with pytest.raises(AnalysisDataQualityError):
+        await service.ask("分析昨天利润")
 
 
 @pytest.mark.anyio

@@ -12,6 +12,14 @@ class NoAnalyzableDataError(RuntimeError):
     pass
 
 
+class NoCurrentDataError(NoAnalyzableDataError):
+    pass
+
+
+class InsufficientComparableHistoryError(NoAnalyzableDataError):
+    pass
+
+
 class ScopeDiscovery(StrictModel):
     requested_scope: SliceKey
     selected_scope: SliceKey
@@ -24,16 +32,23 @@ def discover_scope(
     rows_by_dimension: Mapping[str, Sequence[PerformanceRow]],
 ) -> ScopeDiscovery:
     ranked: list[tuple[float, int, str, str]] = []
+    current_data_found = False
     for dimension in _DIMENSION_ORDER:
         grouped: dict[str, list[PerformanceRow]] = defaultdict(list)
         for row in rows_by_dimension.get(dimension, ()):
             grouped[str(getattr(row, dimension))].append(row)
         for value, rows in grouped.items():
+            if any(intent.window.start <= row.event_hour < intent.window.end for row in rows):
+                current_data_found = True
             loss = _candidate_loss(intent, rows)
             if loss is not None:
                 ranked.append((loss, _DIMENSION_ORDER.index(dimension), value, dimension))
     if not ranked:
-        raise NoAnalyzableDataError("no scope has enough comparable profit history")
+        if not current_data_found:
+            raise NoCurrentDataError("requested window contains no performance rows")
+        raise InsufficientComparableHistoryError(
+            "current data exists but fewer than four comparable history slots are available"
+        )
     loss, _, value, dimension = min(
         ranked,
         key=lambda item: (-item[0], item[1], item[2]),

@@ -9,6 +9,7 @@ from ad_rca.agent.models import InvestigationReport, QuestionAnswer, QuestionReq
 from ad_rca.application.core_service import CoreRcaService, default_verifiers
 from ad_rca.application.investigation_service import validate_answer_evidence
 from ad_rca.data.mysql_snapshot import LoadedAnalysisSnapshot
+from ad_rca.domain.enums import RunStatus
 from ad_rca.domain.models import CoreInvestigationResult, SliceKey
 from ad_rca.infrastructure.artifacts import ArtifactStore
 from ad_rca.infrastructure.models.deepseek import InvalidModelOutputError, ModelUnavailableError
@@ -28,6 +29,10 @@ class NaturalLanguageAnalysis:
     intent: AnalysisIntent
     selected_scope: SliceKey
     run: WorkflowRun
+
+
+class AnalysisDataQualityError(RuntimeError):
+    pass
 
 
 class NaturalLanguageAnalysisService:
@@ -72,6 +77,10 @@ class NaturalLanguageAnalysisService:
         )
         run_id = self._id_factory()
         prepared = core.prepare(snapshot.repository.scenario_id)
+        if prepared.status is RunStatus.DATA_QUALITY_BLOCKED:
+            raise AnalysisDataQualityError(
+                "analysis was blocked by incomplete data or insufficient samples"
+            )
         if prepared.incident is None:
             result = CoreInvestigationResult(
                 status=prepared.status,

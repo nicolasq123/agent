@@ -9,18 +9,24 @@ from typing import Literal, Protocol
 import uvicorn
 from fastapi import FastAPI
 from pydantic import ValidationError
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import DBAPIError, SQLAlchemyError
 
 from ad_rca.agent.models import QuestionAnswer
 from ad_rca.api.app import create_app
 from ad_rca.api.dependencies import build_natural_language_service, build_service
 from ad_rca.application.core_service import CoreRcaService, default_verifiers
 from ad_rca.application.natural_language_service import (
+    AnalysisDataQualityError,
     NaturalLanguageAnalysis,
 )
-from ad_rca.application.scope_discovery import NoAnalyzableDataError
+from ad_rca.application.scope_discovery import (
+    InsufficientComparableHistoryError,
+    NoAnalyzableDataError,
+    NoCurrentDataError,
+)
 from ad_rca.config import Settings
 from ad_rca.data.fixture_repository import FixtureRepository
+from ad_rca.infrastructure.database.mysql import QueryApprovalRejected
 from ad_rca.infrastructure.database.query_budget import QueryBudgetExceeded
 from ad_rca.infrastructure.models.deepseek import (
     JsonCompletionClient,
@@ -102,7 +108,7 @@ def main(
         SQLAlchemyError,
         ModelUnavailableError,
     ) as error:
-        print(f"profitlens command failed: {_safe_error(error)}", file=sys.stderr)
+        print(f"profitlens command failed: {safe_error_message(error)}", file=sys.stderr)
         return 2
     parser.error("unsupported command")
     return 2
@@ -285,21 +291,55 @@ def _default_server_runner(app: FastAPI, host: str, port: int) -> None:
     uvicorn.run(app, host=host, port=port)
 
 
-def _safe_error(error: Exception) -> str:
+def safe_error_message(error: Exception) -> str:
     if isinstance(error, ValidationError):
         fields = sorted({str(item["loc"][0]) for item in error.errors() if item["loc"]})
-        return f"invalid configuration fields: {', '.join(fields)}"
+        return f"[VALIDATION_ERROR] 输入或配置校验失败（字段：{', '.join(fields)}）"
     if isinstance(error, IntentParseError):
-        return f"无法理解分析条件：{error}"
+        return f"[INTENT_PARSE_ERROR] 无法理解分析条件：{error}"
+    if isinstance(error, NoCurrentDataError):
+        return "[DATA_NO_CURRENT] 查询时间范围内没有利润数据"
+    if isinstance(error, InsufficientComparableHistoryError):
+        return "[DATA_HISTORY_INSUFFICIENT] 当前数据存在，但不足四个历史同期样本"
     if isinstance(error, NoAnalyzableDataError):
-        return "没有足够的当前数据和历史同期数据可供分析"
+        return "[DATA_NOT_ANALYZABLE] 没有可供分析的数据范围"
+    if isinstance(error, AnalysisDataQualityError):
+        return "[DATA_QUALITY_BLOCKED] 数据完整度低于 95%、点击量不足或同期样本不足"
+    if isinstance(error, QueryApprovalRejected):
+        return "[QUERY_REJECTED] 只读 SQL 未获人工批准"
     if isinstance(error, QueryBudgetExceeded):
-        return "本次分析查询数量超过安全上限"
-    if isinstance(error, (SQLAlchemyError, TimeoutError, ConnectionError)):
-        return "数据库连接或只读查询失败，请检查网络和只读账号配置"
+        return "[QUERY_BUDGET_EXCEEDED] 本次分析查询数量超过安全上限"
+    if isinstance(error, TimeoutError):
+        return "[DB_TIMEOUT] 数据库只读查询超时"
+    if isinstance(error, ConnectionError):
+        return "[DB_CONNECTION_FAILED] 无法连接数据库"
+    if isinstance(error, SQLAlchemyError):
+        return _database_error_message(error)
     if isinstance(error, ModelUnavailableError):
-        return "模型服务暂时不可用"
+        return "[MODEL_UNAVAILABLE] 模型服务暂时不可用"
     return str(error)
+
+
+def _database_error_message(error: SQLAlchemyError) -> str:
+    code: int | None = None
+    if isinstance(error, DBAPIError) and error.orig is not None:
+        arguments = error.orig.args
+        if arguments and isinstance(arguments[0], int):
+            code = arguments[0]
+    messages = {
+        1044: "[DB_PERMISSION_DENIED] 只读账号无权访问目标数据库",
+        1045: "[DB_AUTH_FAILED] MySQL 用户名或密码错误",
+        1049: "[DB_DATABASE_MISSING] 配置的数据库不存在",
+        1054: "[DB_COLUMN_MISSING] SQL 使用的字段与生产表结构不一致",
+        1146: "[DB_TABLE_MISSING] SQL 使用的表不存在",
+        1227: "[DB_PERMISSION_DENIED] 只读账号权限不足",
+        2003: "[DB_CONNECTION_FAILED] 无法连接 MySQL 地址或端口",
+        2005: "[DB_HOST_UNKNOWN] 无法解析 MySQL 主机名",
+        2013: "[DB_CONNECTION_LOST] 查询期间 MySQL 连接中断",
+    }
+    if code is None:
+        return "[DB_QUERY_FAILED] 数据库只读查询失败"
+    return messages.get(code, "[DB_QUERY_FAILED] 数据库只读查询失败")
 
 
 if __name__ == "__main__":

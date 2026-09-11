@@ -4,12 +4,22 @@ from pathlib import Path
 
 import pytest
 from fastapi import FastAPI
+from sqlalchemy.exc import OperationalError
 
 from ad_rca.agent.intent import AnalysisIntent
 from ad_rca.agent.models import QuestionAnswer
 from ad_rca.application.investigation_service import build_fixture_service
-from ad_rca.application.natural_language_service import NaturalLanguageAnalysis
-from ad_rca.cli import main
+from ad_rca.application.natural_language_service import (
+    AnalysisDataQualityError,
+    NaturalLanguageAnalysis,
+)
+from ad_rca.application.scope_discovery import (
+    InsufficientComparableHistoryError,
+    NoCurrentDataError,
+)
+from ad_rca.cli import main, safe_error_message
+from ad_rca.infrastructure.database.mysql import QueryApprovalRejected
+from ad_rca.infrastructure.database.query_budget import QueryBudgetExceeded
 from ad_rca.infrastructure.models.fake import FakePlanner, TemplateReportComposer
 
 ROOT = Path(__file__).parents[2]
@@ -245,5 +255,33 @@ def test_ask_sanitizes_database_failures(
 
     output = capsys.readouterr()
     assert code == 2
-    assert "数据库连接或只读查询失败" in output.err
+    assert "[DB_TIMEOUT]" in output.err
     assert "database-secret" not in output.err
+
+
+@pytest.mark.parametrize(
+    ("error", "code"),
+    [
+        (NoCurrentDataError(), "[DATA_NO_CURRENT]"),
+        (InsufficientComparableHistoryError(), "[DATA_HISTORY_INSUFFICIENT]"),
+        (AnalysisDataQualityError(), "[DATA_QUALITY_BLOCKED]"),
+        (QueryApprovalRejected(), "[QUERY_REJECTED]"),
+        (QueryBudgetExceeded(), "[QUERY_BUDGET_EXCEEDED]"),
+        (TimeoutError(), "[DB_TIMEOUT]"),
+        (
+            OperationalError("SELECT 1", {}, Exception(1045, "database-secret")),
+            "[DB_AUTH_FAILED]",
+        ),
+        (
+            OperationalError("SELECT 1", {}, Exception(1146, "database-secret")),
+            "[DB_TABLE_MISSING]",
+        ),
+    ],
+)
+def test_safe_errors_have_distinct_codes_without_database_details(
+    error: Exception, code: str
+) -> None:
+    message = safe_error_message(error)
+
+    assert message.startswith(code)
+    assert "database-secret" not in message
