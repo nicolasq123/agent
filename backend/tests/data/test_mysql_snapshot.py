@@ -178,6 +178,20 @@ async def test_loader_accepts_mysql_decimal_aggregates() -> None:
 
 
 @pytest.mark.anyio
+@pytest.mark.parametrize("country", [None, b"US"])
+async def test_loader_normalizes_nullable_or_binary_country(country: object) -> None:
+    row = dict(_performance_row(START))
+    row["country"] = country
+    stat = RecordingReader({"performance_scoped": (row,)})
+    loader = MySqlSnapshotLoader(stat, RecordingReader({}), stat_timezone="UTC")
+
+    snapshot = await loader.load(_intent(SliceKey(offer_id="12345")))
+
+    expected = "__unknown__" if country is None else "US"
+    assert snapshot.repository.all_performance()[0].country == expected
+
+
+@pytest.mark.anyio
 async def test_loader_resets_the_shared_budget_for_each_analysis() -> None:
     budget = QueryBudget(max_queries=20)
     budget.consume()

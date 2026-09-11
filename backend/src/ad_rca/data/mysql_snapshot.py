@@ -293,7 +293,14 @@ def _identifier(row: Mapping[str, object], key: str) -> str:
 
 def _text(row: Mapping[str, object], key: str) -> str:
     value = row.get(key)
-    if not isinstance(value, str) or not value:
+    if value is None or value == "":
+        return "__unknown__"
+    if isinstance(value, bytes):
+        try:
+            value = value.decode("utf-8")
+        except UnicodeDecodeError as error:
+            raise ValueError(f"invalid text column: {key}") from error
+    if not isinstance(value, str):
         raise ValueError(f"invalid text column: {key}")
     return value
 
