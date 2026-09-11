@@ -50,17 +50,17 @@ db-check:
 docker-build:
 	docker build -t "$(DOCKER_IMAGE)" .
 
-# docker-chat: 在 Docker 中启动交互对话并加载根目录 .env；用法：make docker-chat
-docker-chat:
+# docker-chat: 先按当前源码构建镜像，再启动交互对话；用法：make docker-chat
+docker-chat: docker-build
 	mkdir -p backend/artifacts
 	$(DOCKER_RUN) -it "$(DOCKER_IMAGE)" chat
 
-# docker-ask: 在 Docker 中执行单次自然语言分析；用法：make docker-ask QUESTION='分析昨天利润下降原因'
-docker-ask:
+# docker-ask: 先构建镜像，再执行单次自然语言分析；用法：make docker-ask QUESTION='分析昨天利润下降原因'
+docker-ask: docker-build
 	mkdir -p backend/artifacts
 	$(DOCKER_RUN) "$(DOCKER_IMAGE)" ask "$(QUESTION)"
 
-# docker-db-check: 在 Docker 中检查 DB20 和 DB40；用法：make docker-db-check
-docker-db-check:
+# docker-db-check: 先构建镜像，再检查 DB20 和 DB40；用法：make docker-db-check
+docker-db-check: docker-build
 	mkdir -p backend/artifacts
 	$(DOCKER_RUN) -it "$(DOCKER_IMAGE)" db-check

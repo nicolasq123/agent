@@ -72,3 +72,5 @@ def test_docker_make_targets_render_runnable_commands(
 
     assert result.returncode == 0, result.stderr
     assert all(fragment in result.stdout for fragment in expected)
+    if target != "docker-build":
+        assert result.stdout.index("docker build") < result.stdout.index("docker run")
