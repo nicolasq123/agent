@@ -30,7 +30,7 @@ def discover_scope(
             grouped[str(getattr(row, dimension))].append(row)
         for value, rows in grouped.items():
             loss = _candidate_loss(intent, rows)
-            if loss is not None and loss > 0:
+            if loss is not None:
                 ranked.append((loss, _DIMENSION_ORDER.index(dimension), value, dimension))
     if not ranked:
         raise NoAnalyzableDataError("no scope has enough comparable profit history")

@@ -77,6 +77,16 @@ def test_discovery_uses_stable_dimension_tie_breaking() -> None:
     assert result.selected_scope == SliceKey(advertiser_id="2")
 
 
+def test_discovery_accepts_comparable_scope_without_profit_loss() -> None:
+    result = discover_scope(
+        intent=_intent(),
+        rows_by_dimension={"offer_id": _series("offer_id", "12345", loss=0)},
+    )
+
+    assert result.selected_scope == SliceKey(offer_id="12345")
+    assert result.lost_profit == 0
+
+
 def test_discovery_rejects_candidates_without_four_history_slots() -> None:
     rows = _series("offer_id", "12345", loss=900)
 
