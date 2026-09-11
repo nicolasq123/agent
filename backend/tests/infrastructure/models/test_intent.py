@@ -91,6 +91,15 @@ def test_deepseek_parser_repairs_invalid_json_once() -> None:
     assert "validation_error" in client.requests[1][1]
 
 
+def test_deepseek_parser_rejects_non_hour_aligned_windows() -> None:
+    invalid = _valid_intent_json().replace("2026-09-04T00:00:00", "2026-09-03T23:59:59")
+    client = RecordingJsonClient(invalid, invalid)
+
+    intent = DeepSeekIntentParser(client, now=_now).parse("分析 2026-09-03 的利润")
+
+    assert intent.window.end.isoformat() == "2026-09-04T00:00:00+08:00"
+
+
 def test_deepseek_parser_falls_back_when_model_is_unavailable() -> None:
     client = RecordingJsonClient(ModelUnavailableError("offline"))
 

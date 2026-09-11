@@ -134,13 +134,19 @@ async def test_question_runs_real_workflow_over_loaded_snapshot(tmp_path: Path) 
         id_factory=lambda: "run-natural-language",
     )
 
-    analysis = await service.ask("分析昨天 offer 12345 为什么利润下降")
+    progress: list[str] = []
+    analysis = await service.ask(
+        "分析昨天 offer 12345 为什么利润下降",
+        progress=progress.append,
+    )
 
     assert analysis.run.result.status is RunStatus.COMPLETED
     assert analysis.run.report.conclusions
     assert analysis.intent.scope.offer_id == "12345"
     assert analysis.selected_scope == SliceKey(offer_id="12345")
     assert parser.questions == ["分析昨天 offer 12345 为什么利润下降"]
+    assert progress[0] == "正在解析问题和时间范围"
+    assert progress[-1] == "证据验证完成，报告已生成"
 
 
 @pytest.mark.anyio

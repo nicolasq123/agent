@@ -195,6 +195,11 @@ def _extract_id(question: str, pattern: str) -> str | None:
 def _validate_window(window: TimeWindow, current: datetime) -> None:
     if window.start.tzinfo is None or window.end.tzinfo is None:
         raise IntentParseError("时间范围必须包含时区")
+    if any(
+        (value.minute, value.second, value.microsecond) != (0, 0, 0)
+        for value in (window.start, window.end)
+    ):
+        raise IntentParseError("时间范围必须按整点对齐")
     if window.end > current:
         raise IntentParseError("暂不分析未来时间")
     if window.end - window.start > _MAX_WINDOW:

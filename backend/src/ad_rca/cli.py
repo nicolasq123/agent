@@ -40,7 +40,12 @@ class ServerRunner(Protocol):
 
 
 class NaturalService(Protocol):
-    async def ask(self, question: str) -> NaturalLanguageAnalysis: ...
+    async def ask(
+        self,
+        question: str,
+        *,
+        progress: Callable[[str], None] | None = None,
+    ) -> NaturalLanguageAnalysis: ...
 
     def answer(self, analysis: NaturalLanguageAnalysis, question: str) -> QuestionAnswer: ...
 
@@ -246,7 +251,10 @@ async def _chat_loop(
             print("已清除当前分析，请输入新问题。")
             continue
         if analysis is None:
-            analysis = await service.ask(line)
+            analysis = await service.ask(
+                line,
+                progress=lambda message: print(f"[分析] {message}", flush=True),
+            )
             print(render_analysis_markdown(analysis))
         else:
             answer = service.answer(analysis, line)

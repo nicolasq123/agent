@@ -1,5 +1,5 @@
 import json
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from pathlib import Path
 
 import pytest
@@ -22,8 +22,15 @@ class FakeNaturalService:
         self.answered: list[str] = []
         self.checked = False
 
-    async def ask(self, question: str) -> NaturalLanguageAnalysis:
+    async def ask(
+        self,
+        question: str,
+        *,
+        progress: Callable[[str], None] | None = None,
+    ) -> NaturalLanguageAnalysis:
         self.asked.append(question)
+        if progress is not None:
+            progress("测试进度")
         return self.analysis
 
     def answer(self, analysis: NaturalLanguageAnalysis, question: str) -> QuestionAnswer:
@@ -36,7 +43,12 @@ class FakeNaturalService:
 
 
 class FailingNaturalService(FakeNaturalService):
-    async def ask(self, question: str) -> NaturalLanguageAnalysis:
+    async def ask(
+        self,
+        question: str,
+        *,
+        progress: Callable[[str], None] | None = None,
+    ) -> NaturalLanguageAnalysis:
         raise TimeoutError("database-secret at db20")
 
 
@@ -197,7 +209,9 @@ def test_chat_reuses_current_analysis_and_handles_local_commands(
     assert code == 0
     assert service.asked == ["分析昨天利润"]
     assert service.answered == ["还有哪些证据？"]
-    assert "补充回答" in capsys.readouterr().out
+    output = capsys.readouterr().out
+    assert "[分析] 测试进度" in output
+    assert "补充回答" in output
 
 
 def test_db_check_prints_no_connection_secrets(

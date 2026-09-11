@@ -13,6 +13,7 @@ from ad_rca.domain.models import CoreInvestigationResult, SliceKey
 from ad_rca.infrastructure.artifacts import ArtifactStore
 from ad_rca.infrastructure.models.deepseek import InvalidModelOutputError, ModelUnavailableError
 from ad_rca.infrastructure.models.fake import TemplateReportComposer
+from ad_rca.workflow.events import WorkflowEvent
 from ad_rca.workflow.graph import InvestigationWorkflow, WorkflowRun
 
 
@@ -51,9 +52,17 @@ class NaturalLanguageAnalysisService:
     async def check_database(self) -> None:
         await self._loader.check()
 
-    async def ask(self, question: str) -> NaturalLanguageAnalysis:
+    async def ask(
+        self,
+        question: str,
+        *,
+        progress: Callable[[str], None] | None = None,
+    ) -> NaturalLanguageAnalysis:
+        _notify(progress, "正在解析问题和时间范围")
         intent = self._parser.parse(question)
+        _notify(progress, "正在读取 MySQL 当前数据和历史基线")
         snapshot = await self._loader.load(intent)
+        _notify(progress, "正在检测异常并计算利润损失")
         core = CoreRcaService(
             snapshot.repository,
             default_verifiers(),
@@ -83,6 +92,7 @@ class NaturalLanguageAnalysisService:
                 report=report,
                 events=(),
             )
+            _notify(progress, "分析完成：未检测到利润异常")
         else:
             workflow = InvestigationWorkflow(
                 core,
@@ -90,7 +100,22 @@ class NaturalLanguageAnalysisService:
                 self._composer,
                 artifact_store=self._artifacts,
             )
-            run = workflow.run(snapshot.repository.scenario_id, run_id=run_id)
+            event_sink = None
+            if progress is not None:
+                incident_id = prepared.incident.incident_id
+
+                def publish(event: WorkflowEvent) -> None:
+                    self._artifacts.append_event(incident_id, run_id, event)
+                    message = _progress_message(event)
+                    if message is not None:
+                        progress(message)
+
+                event_sink = publish
+            run = workflow.run(
+                snapshot.repository.scenario_id,
+                run_id=run_id,
+                event_sink=event_sink,
+            )
         return NaturalLanguageAnalysis(
             intent=intent,
             selected_scope=snapshot.selected_scope,
@@ -105,3 +130,22 @@ class NaturalLanguageAnalysisService:
             return answer
         except (ModelUnavailableError, InvalidModelOutputError, ValueError):
             return self._fallback_composer.answer(request)
+
+
+def _notify(progress: Callable[[str], None] | None, message: str) -> None:
+    if progress is not None:
+        progress(message)
+
+
+def _progress_message(event: WorkflowEvent) -> str | None:
+    if event.event_type == "attribution_completed":
+        return f"损失归因完成：{event.payload.get('paths', 0)} 个路径"
+    if event.event_type == "hypothesis_generated":
+        return "已生成根因候选"
+    if event.event_type == "plan_created":
+        return "正在验证根因候选"
+    if event.event_type == "root_cause_confirmed":
+        return f"已找到支持证据：{event.payload.get('hypothesis', 'unknown')}"
+    if event.event_type == "report_generated":
+        return "证据验证完成，报告已生成"
+    return None
