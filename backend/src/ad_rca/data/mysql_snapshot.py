@@ -6,7 +6,7 @@ from typing import Protocol
 from zoneinfo import ZoneInfo
 
 from ad_rca.agent.intent import AnalysisIntent
-from ad_rca.application.scope_discovery import discover_scope
+from ad_rca.application.scope_discovery import InsufficientComparableHistoryError, discover_scope
 from ad_rca.data.fixture_repository import FixtureRepository
 from ad_rca.domain.models import (
     CapObservation,
@@ -96,7 +96,10 @@ class MySqlSnapshotLoader:
                 series_by_dimension[dimension] = tuple(
                     self._map_series_row(row, dimension, intent.timezone) for row in rows
                 )
-            selected_scope = discover_scope(intent, series_by_dimension).selected_scope
+            try:
+                selected_scope = discover_scope(intent, series_by_dimension).selected_scope
+            except InsufficientComparableHistoryError:
+                selected_scope = SliceKey()
 
         performance_parameters = {
             **common,

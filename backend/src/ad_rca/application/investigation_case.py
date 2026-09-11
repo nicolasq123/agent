@@ -6,6 +6,7 @@ from ad_rca.rca.verifiers.base import VerificationContext
 class PreparedInvestigation(StrictModel):
     status: RunStatus
     incident: Incident | None
+    errors: tuple[str, ...] = ()
     attributions: tuple[AttributionResult, ...] = ()
     residual_loss: float = 0.0
     context: VerificationContext | None = None

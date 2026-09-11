@@ -103,6 +103,7 @@ class CoreRcaService:
             return PreparedInvestigation(
                 status=detection.status,
                 incident=None,
+                errors=detection.errors,
                 residual_loss=0.0,
             )
 

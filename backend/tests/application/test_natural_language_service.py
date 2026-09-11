@@ -87,7 +87,9 @@ def _intent() -> AnalysisIntent:
     )
 
 
-def _snapshot(*, current_profit: float = 100, current_hours: int = 3) -> LoadedAnalysisSnapshot:
+def _snapshot(
+    *, current_profit: float = 100, current_hours: int = 3, history_weeks: int = 8
+) -> LoadedAnalysisSnapshot:
     def row(event_hour: datetime, profit: float) -> PerformanceRow:
         return PerformanceRow(
             event_hour=event_hour,
@@ -105,7 +107,7 @@ def _snapshot(*, current_profit: float = 100, current_hours: int = 3) -> LoadedA
     history = tuple(
         row(START + timedelta(hours=hour) - timedelta(weeks=week), 400)
         for hour in range(3)
-        for week in range(1, 9)
+        for week in range(1, history_weeks + 1)
     )
     current = tuple(
         row(START + timedelta(hours=hour), current_profit) for hour in range(current_hours)
@@ -184,6 +186,23 @@ async def test_incomplete_current_window_returns_data_quality_error(tmp_path: Pa
 
     with pytest.raises(AnalysisDataQualityError):
         await service.ask("分析昨天利润")
+
+
+@pytest.mark.anyio
+async def test_missing_history_returns_current_profit_summary(tmp_path: Path) -> None:
+    service = NaturalLanguageAnalysisService(
+        parser=FixedIntentParser(_intent()),
+        loader=FakeSnapshotLoader(_snapshot(history_weeks=0)),
+        planner=FakePlanner(),
+        composer=TemplateReportComposer(),
+        artifact_store=ArtifactStore(tmp_path),
+    )
+
+    analysis = await service.ask("分析昨天利润")
+
+    assert "本期收入 3000.00" in analysis.run.report.summary
+    assert "利润 300.00" in analysis.run.report.summary
+    assert analysis.run.warnings == ("HISTORY_BASELINE_UNAVAILABLE",)
 
 
 @pytest.mark.anyio

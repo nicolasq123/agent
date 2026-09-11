@@ -9,6 +9,7 @@ from ad_rca.agent.models import InvestigationReport, QuestionAnswer, QuestionReq
 from ad_rca.application.core_service import CoreRcaService, default_verifiers
 from ad_rca.application.investigation_service import validate_answer_evidence
 from ad_rca.data.mysql_snapshot import LoadedAnalysisSnapshot
+from ad_rca.detection.metrics import aggregate_metrics
 from ad_rca.domain.enums import RunStatus
 from ad_rca.domain.models import CoreInvestigationResult, SliceKey
 from ad_rca.infrastructure.artifacts import ArtifactStore
@@ -78,6 +79,41 @@ class NaturalLanguageAnalysisService:
         run_id = self._id_factory()
         prepared = core.prepare(snapshot.repository.scenario_id)
         if prepared.status is RunStatus.DATA_QUALITY_BLOCKED:
+            if prepared.errors:
+                current = snapshot.repository.performance(intent.window, snapshot.selected_scope)
+                metrics = aggregate_metrics(current)
+                margin = f"{metrics.margin:.2%}" if metrics.margin is not None else "无法计算"
+                result = CoreInvestigationResult(
+                    status=prepared.status,
+                    incident=None,
+                    residual_loss=0,
+                )
+                report = InvestigationReport(
+                    run_id=run_id,
+                    incident_id="history-unavailable",
+                    status=prepared.status,
+                    summary=(
+                        f"本期收入 {metrics.revenue:.2f}，支出 {metrics.payout:.2f}，"
+                        f"利润 {metrics.profit:.2f}，利润率 {margin}。"
+                        "数据库未返回分析窗口之前的可比历史数据，无法判断利润升降或归因。"
+                    ),
+                    generated_without_llm=True,
+                    warnings=("HISTORY_BASELINE_UNAVAILABLE",),
+                )
+                run = WorkflowRun(
+                    run_id=run_id,
+                    rounds=0,
+                    result=result,
+                    report=report,
+                    events=(),
+                    warnings=("HISTORY_BASELINE_UNAVAILABLE",),
+                )
+                _notify(progress, "分析完成：已汇总当前利润，历史基线不可用")
+                return NaturalLanguageAnalysis(
+                    intent=intent,
+                    selected_scope=snapshot.selected_scope,
+                    run=run,
+                )
             raise AnalysisDataQualityError(
                 "analysis was blocked by incomplete data or insufficient samples"
             )
