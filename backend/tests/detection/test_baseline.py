@@ -59,6 +59,21 @@ def test_baseline_uses_deviation_floor_when_mad_is_zero() -> None:
     assert isclose(result.robust_z, -3.3725)
 
 
+def test_baseline_falls_back_to_same_hour_across_recent_days() -> None:
+    history = tuple(
+        _profit_row(CURRENT_HOUR - timedelta(days=index + 1), 100.0) for index in range(4)
+    )
+
+    result = build_profit_baseline(
+        current_hour=CURRENT_HOUR,
+        current_rows=(_profit_row(CURRENT_HOUR, 50.0),),
+        history_rows=history,
+    )
+
+    assert result.expected_profit == 100.0
+    assert result.sample_size == 4
+
+
 def test_baseline_rejects_fewer_than_four_matching_slots() -> None:
     history = tuple(
         _profit_row(CURRENT_HOUR - timedelta(weeks=index + 1), 100.0) for index in range(3)

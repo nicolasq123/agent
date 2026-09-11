@@ -12,6 +12,26 @@ class InsufficientHistoryError(ValueError):
     """Raised when a same-slot baseline cannot be constructed reliably."""
 
 
+def comparable_history_slots(
+    current_hour: datetime,
+    history_rows: Sequence[PerformanceRow],
+    minimum_slots: int = 4,
+) -> tuple[tuple[PerformanceRow, ...], ...]:
+    """Prefer same-weekday slots, then fall back to recent same-hour slots."""
+    rows_by_hour: dict[datetime, list[PerformanceRow]] = defaultdict(list)
+    for row in history_rows:
+        if row.event_hour.hour == current_hour.hour:
+            rows_by_hour[row.event_hour].append(row)
+    slots = tuple(
+        tuple(rows)
+        for hour, rows in sorted(rows_by_hour.items())
+        if hour.weekday() == current_hour.weekday()
+    )
+    if len(slots) < minimum_slots:
+        slots = tuple(tuple(rows) for _, rows in sorted(rows_by_hour.items()))
+    return slots if len(slots) >= minimum_slots else ()
+
+
 def build_profit_baseline(
     *,
     current_hour: datetime,
@@ -24,17 +44,10 @@ def build_profit_baseline(
     if deviation_floor <= 0:
         raise ValueError("deviation_floor must be positive")
 
-    profits_by_hour: dict[datetime, float] = defaultdict(float)
-    for row in history_rows:
-        if (
-            row.event_hour.weekday() == current_hour.weekday()
-            and row.event_hour.hour == current_hour.hour
-        ):
-            profits_by_hour[row.event_hour] += row.revenue - row.payout
-
-    historical_profits = tuple(profits_by_hour.values())
-    if len(historical_profits) < 4:
+    slots = comparable_history_slots(current_hour, history_rows)
+    if not slots:
         raise InsufficientHistoryError("at least 4 matching historical slots are required")
+    historical_profits = tuple(aggregate_metrics(slot).profit for slot in slots)
 
     median_profit = float(np.median(historical_profits))
     mad = float(np.median([abs(value - median_profit) for value in historical_profits]))

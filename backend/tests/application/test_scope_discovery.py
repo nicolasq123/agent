@@ -88,6 +88,22 @@ def test_discovery_accepts_comparable_scope_without_profit_loss() -> None:
     assert result.lost_profit == 0
 
 
+def test_discovery_falls_back_to_same_hour_across_recent_days() -> None:
+    rows = _series("offer_id", "12345", loss=900)
+    recent_history = tuple(
+        row.model_copy(update={"event_hour": START - timedelta(days=index)})
+        for index, row in enumerate(rows[:4], start=1)
+    )
+
+    result = discover_scope(
+        intent=_intent(),
+        rows_by_dimension={"offer_id": recent_history + (rows[-1],)},
+    )
+
+    assert result.selected_scope == SliceKey(offer_id="12345")
+    assert result.lost_profit == 900
+
+
 def test_discovery_rejects_candidates_without_four_history_slots() -> None:
     rows = _series("offer_id", "12345", loss=900)
 

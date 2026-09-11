@@ -3,6 +3,8 @@ from collections.abc import Mapping, Sequence
 from statistics import median
 
 from ad_rca.agent.intent import AnalysisIntent
+from ad_rca.detection.baseline import comparable_history_slots
+from ad_rca.detection.metrics import aggregate_metrics
 from ad_rca.domain.models import PerformanceRow, SliceKey, StrictModel
 
 _DIMENSION_ORDER = ("advertiser_id", "country", "channel_id", "offer_id")
@@ -69,14 +71,9 @@ def _candidate_loss(intent: AnalysisIntent, rows: Sequence[PerformanceRow]) -> f
     expected_profit = 0.0
     actual_profit = 0.0
     for current_row in current:
-        matching = [
-            row
-            for row in history
-            if row.event_hour.weekday() == current_row.event_hour.weekday()
-            and row.event_hour.hour == current_row.event_hour.hour
-        ]
-        if len(matching) < 4:
+        slots = comparable_history_slots(current_row.event_hour, history)
+        if not slots:
             return None
-        expected_profit += median(row.revenue - row.payout for row in matching)
+        expected_profit += median(aggregate_metrics(slot).profit for slot in slots)
         actual_profit += current_row.revenue - current_row.payout
     return max(expected_profit - actual_profit, 0.0)

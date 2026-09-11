@@ -6,6 +6,7 @@ from typing import Literal
 
 from ad_rca.application.investigation_case import PreparedInvestigation
 from ad_rca.data.fixture_repository import FixtureRepository
+from ad_rca.detection.baseline import comparable_history_slots
 from ad_rca.detection.detector import DetectionConfig, detect_incident
 from ad_rca.detection.metrics import aggregate_metrics
 from ad_rca.domain.enums import (
@@ -198,14 +199,10 @@ def _expected_rows(
     rows: list[PerformanceRow] = []
     for (advertiser, offer, channel, country), values in grouped.items():
         for current_hour in current_hours:
-            matching = tuple(
-                row
-                for row in values
-                if row.event_hour.weekday() == current_hour.weekday()
-                and row.event_hour.hour == current_hour.hour
-            )
-            if not matching:
+            slots = comparable_history_slots(current_hour, values)
+            if not slots:
                 continue
+            baselines = tuple(aggregate_metrics(slot) for slot in slots)
             rows.append(
                 PerformanceRow(
                     event_hour=current_hour,
@@ -213,13 +210,13 @@ def _expected_rows(
                     offer_id=offer,
                     channel_id=channel,
                     country=country,
-                    clicks=round(median(row.clicks for row in matching)),
-                    conversions=round(median(row.conversions for row in matching)),
+                    clicks=round(median(row.clicks for row in baselines)),
+                    conversions=round(median(row.conversions for row in baselines)),
                     approved_conversions=round(
-                        median(row.approved_conversions for row in matching)
+                        median(row.approved_conversions for row in baselines)
                     ),
-                    revenue=median(row.revenue for row in matching),
-                    payout=median(row.payout for row in matching),
+                    revenue=median(row.revenue for row in baselines),
+                    payout=median(row.payout for row in baselines),
                 )
             )
     return tuple(rows)
