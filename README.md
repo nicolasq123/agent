@@ -148,7 +148,9 @@ Expected successful response (column names must match the requested SQL aliases)
 {"rows":[{"source_rows":12,"revenue_rows":12,"payout_rows":12,"revenue":"123.45","payout":"23.40","first_dt":"2026-09-10 00:00:00","last_dt":"2026-09-10 23:00:00"}]}
 ```
 
-`db-check` expects `{"rows":[{"ok":1}]}`. Counts and IDs should be JSON integers or IDs
+The test gateway envelope `{"c":0,"d":[...]}` is also supported; `c` must be the integer
+zero for success. Nonzero codes are errors, and `d` has the same row format as `rows`.
+`db-check` expects `{"rows":[{"ok":1}]}` or `{"c":0,"d":[{"ok":1}]}`. Counts and IDs should be JSON integers or IDs
 as strings; monetary values may be decimal strings or JSON numbers. Temporal fields use ISO
 timestamps (or `YYYY-MM-DD HH:MM:SS`); naive values follow `STAT_TIMEZONE`. A successful empty
 SELECT returns `{"rows":[]}`. Errors should use non-2xx HTTP status codes; `error` or

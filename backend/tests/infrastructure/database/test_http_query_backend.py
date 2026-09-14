@@ -118,6 +118,12 @@ def test_binding_does_not_turn_text_into_sql() -> None:
         render_query("SELECT :x LIMIT 1", {"x": ["unsafe"]})
 
 
+def test_gateway_code_data_envelope() -> None:
+    assert decode_rows(b'{"c":0,"d":[{"ok":1}]}') == ({"ok": 1},)
+    with pytest.raises(HttpQueryError, match="REMOTE_ERROR"):
+        decode_rows(b'{"c":1,"d":[],"message":"private"}')
+
+
 @pytest.mark.parametrize(
     "body,code",
     [

@@ -110,6 +110,10 @@ def decode_rows(content: bytes) -> tuple[Mapping[str, object], ...]:
     if data.get("truncated") or data.get("has_more") or data.get("next_cursor"):
         raise HttpQueryError("[HTTP_QUERY_INCOMPLETE] 查询服务返回了不完整结果")
     raw_rows = data.get("rows")
+    if "c" in data:
+        if type(data["c"]) is not int or data["c"] != 0:
+            raise HttpQueryError("[HTTP_QUERY_REMOTE_ERROR] 查询接口返回非零或无效业务状态码")
+        raw_rows = data.get("d")
     if not isinstance(raw_rows, list) or len(cast(list[object], raw_rows)) > 10000:
         raise HttpQueryError("[HTTP_QUERY_FORMAT] rows 必须是至多 10000 行的数组")
     rows: list[Mapping[str, object]] = []
