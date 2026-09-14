@@ -20,7 +20,7 @@ from ad_rca.application.natural_language_service import (
 from ad_rca.application.scope_discovery import NoAnalyzableDataError
 from ad_rca.config import Settings
 from ad_rca.data.fixture_repository import FixtureRepository
-from ad_rca.data.mysql_snapshot import LoadedAnalysisSnapshot
+from ad_rca.data.mysql_snapshot import LoadedAnalysisSnapshot, PeriodTotals
 from ad_rca.domain.enums import RunStatus
 from ad_rca.domain.models import (
     PerformanceRow,
@@ -47,6 +47,9 @@ class FixedIntentParser:
 
 
 class FakeSnapshotLoader:
+    async def summarize(self, intent: AnalysisIntent) -> PeriodTotals:
+        raise AssertionError("RCA test must not request totals")
+
     def __init__(
         self,
         snapshot: LoadedAnalysisSnapshot | None = None,

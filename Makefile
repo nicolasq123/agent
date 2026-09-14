@@ -1,5 +1,5 @@
 .PHONY: install test check demo agent-demo model-check dev ask chat db-check \
-	docker-build docker-chat docker-ask docker-db-check
+	docker-build docker-chat docker-ask docker-db-check db-profile docker-db-profile test-mysql-live
 
 DOCKER_IMAGE ?= profitlens:local
 DOCKER_RUN = docker run --rm --network host --env-file .env \
@@ -46,6 +46,14 @@ chat:
 db-check:
 	cd backend && uv run profitlens db-check
 
+# db-profile: 只读诊断 stat 最近7天的时间覆盖、粒度及空值；用法：make db-profile
+db-profile:
+	cd backend && uv run profitlens db-profile
+
+# test-mysql-live: 使用本地 .env 连接 MySQL，仅 SELECT 合成派生表验证金额，不写表。
+test-mysql-live:
+	cd backend && PROFITLENS_LIVE_MYSQL=1 uv run pytest tests/test_mysql_live_reliability.py -q
+
 # docker-build: 构建包含 Python 3.12 和生产依赖的镜像；用法：make docker-build
 docker-build:
 	docker build -t "$(DOCKER_IMAGE)" .
@@ -64,3 +72,8 @@ docker-ask: docker-build
 docker-db-check: docker-build
 	mkdir -p backend/artifacts
 	$(DOCKER_RUN) -it "$(DOCKER_IMAGE)" db-check
+
+# docker-db-profile: 构建镜像后执行上述只读数据诊断；用法：make docker-db-profile
+docker-db-profile: docker-build
+	mkdir -p backend/artifacts
+	$(DOCKER_RUN) -it "$(DOCKER_IMAGE)" db-profile

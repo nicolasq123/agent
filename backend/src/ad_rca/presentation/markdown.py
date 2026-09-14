@@ -15,9 +15,12 @@ def render_analysis_markdown(analysis: NaturalLanguageAnalysis) -> str:
         "",
     ]
     incident = result.incident
+    gross_loss = sum(item.lost_profit for item in result.attributions) + result.residual_loss
     if incident is None:
         lines.extend(("## 结果", "", report.summary))
         return "\n".join(lines)
+
+    offsetting_gain = max(gross_loss - (incident.expected_profit - incident.actual_profit), 0)
 
     lines.extend(
         (
@@ -26,6 +29,11 @@ def render_analysis_markdown(analysis: NaturalLanguageAnalysis) -> str:
             f"- 实际利润：{incident.actual_profit:.2f}",
             f"- 预期利润：{incident.expected_profit:.2f}",
             f"- 利润损失：{incident.lost_profit:.2f}",
+            f"- 净利润变化（实际−预期）：{incident.actual_profit - incident.expected_profit:.2f}",
+            f"- 下滑切片贡献（含未定位）：{gross_loss:.2f}",
+            f"- 上涨抵消贡献：{offsetting_gain:.2f}",
+            "- 基线：同星期同小时优先，不足四个时段则使用历史同小时；归因使用相同中位利润样本。",
+            "- 验证范围：仅验证最大损失路径；各假设解释金额可能重叠，不可相加。",
             "",
             "## 结论与 Evidence",
             "",

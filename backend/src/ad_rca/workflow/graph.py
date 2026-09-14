@@ -10,7 +10,12 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, START, StateGraph
 
 from ad_rca.agent.contracts import InvestigationPlanner, ReportComposer
-from ad_rca.agent.models import InvestigationReport, PlanningRequest, ReportRequest
+from ad_rca.agent.models import (
+    InvestigationReport,
+    PlanningRequest,
+    ReportRequest,
+    validate_report_conclusions,
+)
 from ad_rca.application.core_service import CoreRcaService
 from ad_rca.application.investigation_case import PreparedInvestigation
 from ad_rca.domain.enums import HypothesisStatus, HypothesisType, RunStatus
@@ -146,7 +151,9 @@ class InvestigationWorkflow:
         builder.add_node("verify", self._verify)
         builder.add_node("compose", self._compose)
         builder.add_edge(START, "prepare")
-        builder.add_edge("prepare", "plan")
+        builder.add_conditional_edges(
+            "prepare", self._after_prepare, {"plan": "plan", "compose": "compose"}
+        )
         builder.add_edge("plan", "verify")
         builder.add_conditional_edges(
             "verify",
@@ -162,6 +169,7 @@ class InvestigationWorkflow:
             raise ValueError("no incident was detected for investigation")
         return {
             "prepared": prepared,
+            "result": self._core.verify(prepared, ()) if not prepared.candidates else None,
             "events": [
                 self._event(state, 10, "baseline_loaded", {"status": prepared.status.value}),
                 self._event(
@@ -178,6 +186,10 @@ class InvestigationWorkflow:
                 ),
             ],
         }
+
+    def _after_prepare(self, state: InvestigationState) -> Literal["plan", "compose"]:
+        prepared = state["prepared"]
+        return "plan" if prepared is not None and prepared.candidates else "compose"
 
     def _plan(self, state: InvestigationState) -> dict[str, object]:
         prepared = state["prepared"]
@@ -374,6 +386,7 @@ def _merge_results(
 
 
 def _validate_report_evidence(report: InvestigationReport, result: CoreInvestigationResult) -> None:
+    validate_report_conclusions(report, result)
     allowed = {item.evidence_id for item in (*result.evidence, *result.contradictions)}
     if any(
         evidence_id not in allowed

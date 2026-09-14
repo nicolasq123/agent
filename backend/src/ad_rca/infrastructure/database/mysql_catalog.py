@@ -101,6 +101,38 @@ LIMIT 10000""",
 
 def stat_query_specs() -> Mapping[str, QuerySpec]:
     specs: dict[str, QuerySpec] = {"health": _HEALTH}
+    specs["stat_profile"] = _stat_spec(
+        "stat_profile",
+        """SELECT MIN(dt) AS first_dt, MAX(dt) AS last_dt,
+       COUNT(dt) AS source_rows, COUNT(DISTINCT dt) AS distinct_timestamps,
+       COUNT(DISTINCT DATE(dt)) AS distinct_days,
+       SUM(CASE WHEN MINUTE(dt) <> 0 OR SECOND(dt) <> 0 THEN 1 ELSE 0 END) AS non_hour_rows,
+       SUM(CASE WHEN country IS NULL OR country = '' THEN 1 ELSE 0 END) AS unknown_country_rows,
+       COUNT(revenue) AS revenue_rows, COUNT(payout) AS payout_rows
+FROM au_stat.stat
+WHERE dt >= :window_start AND dt < :window_end
+LIMIT 1""",
+        frozenset({"window_start", "window_end"}),
+        max_result_rows=1,
+    )
+    specs["period_totals"] = _stat_spec(
+        "period_totals",
+        """SELECT COUNT(dt) AS source_rows,
+       COUNT(revenue) AS revenue_rows, COUNT(payout) AS payout_rows,
+       SUM(revenue) AS revenue, SUM(payout) AS payout,
+       MIN(dt) AS first_dt, MAX(dt) AS last_dt
+FROM au_stat.stat
+WHERE dt >= :window_start AND dt < :window_end
+  AND (:advertiser_id IS NULL OR ader_id = :advertiser_id)
+  AND (:offer_id IS NULL OR oid_ = :offer_id)
+  AND (:channel_id IS NULL OR aid = :channel_id)
+  AND (:country IS NULL OR country = :country)
+LIMIT 1""",
+        frozenset(
+            {"window_start", "window_end", "advertiser_id", "offer_id", "channel_id", "country"}
+        ),
+        max_result_rows=1,
+    )
     specs["performance_total"] = _stat_spec(
         "performance_total",
         """SELECT dt AS event_hour,

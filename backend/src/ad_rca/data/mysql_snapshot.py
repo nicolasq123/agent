@@ -43,6 +43,15 @@ class LoadedAnalysisSnapshot:
     repository: FixtureRepository
 
 
+@dataclass(frozen=True)
+class PeriodTotals:
+    revenue: Decimal
+    payout: Decimal
+    source_rows: int
+    first_dt: str
+    last_dt: str
+
+
 class MySqlSnapshotLoader:
     def __init__(
         self,
@@ -60,6 +69,33 @@ class MySqlSnapshotLoader:
     async def check(self) -> None:
         await self._stat_reader.check()
         await self._config_reader.check()
+
+    async def summarize(self, intent: AnalysisIntent) -> PeriodTotals:
+        if self._query_budget is not None:
+            self._query_budget.reset()
+        rows = await self._stat_reader.query(
+            "period_totals",
+            {
+                "window_start": self._database_time(intent.window.start),
+                "window_end": self._database_time(intent.window.end),
+                **intent.scope.model_dump(),
+            },
+        )
+        if len(rows) != 1:
+            raise ValueError("[DATA_TOTALS_INVALID] 汇总查询必须返回一行")
+        row = rows[0]
+        count = _integer(row, "source_rows")
+        if count == 0:
+            from ad_rca.application.scope_discovery import NoCurrentDataError
+
+            raise NoCurrentDataError()
+        if any(_integer(row, key) != count for key in ("revenue_rows", "payout_rows")):
+            raise ValueError("[DATA_AMOUNT_MISSING] 收入或支出存在 NULL，无法提供完整金额")
+        revenue = Decimal(str(row["revenue"]))
+        payout = Decimal(str(row["payout"]))
+        if not revenue.is_finite() or not payout.is_finite():
+            raise ValueError("[DATA_AMOUNT_INVALID] 金额不是有限数值")
+        return PeriodTotals(revenue, payout, count, str(row["first_dt"]), str(row["last_dt"]))
 
     async def load(self, intent: AnalysisIntent) -> LoadedAnalysisSnapshot:
         if self._query_budget is not None:

@@ -1,3 +1,4 @@
+import json
 from hashlib import sha256
 from typing import Literal, Protocol
 
@@ -67,7 +68,19 @@ def make_evidence(
 ) -> Evidence:
     dimensions = context.affected_slice.dimensions()
     slice_identity = tuple(f"{name}={value}" for name, value in dimensions)
-    identity = "|".join((hypothesis, dataset, *record_ids, formula, *slice_identity))
+    identity = "|".join(
+        (
+            hypothesis,
+            dataset,
+            *record_ids,
+            formula,
+            *slice_identity,
+            context.incident.window.start.isoformat(),
+            context.incident.window.end.isoformat(),
+            json.dumps(inputs, sort_keys=True),
+            str(explained_loss),
+        )
+    )
     evidence_id = f"ev-{sha256(identity.encode()).hexdigest()[:16]}"
     return Evidence(
         evidence_id=evidence_id,

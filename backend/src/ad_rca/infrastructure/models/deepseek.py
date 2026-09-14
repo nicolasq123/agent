@@ -15,6 +15,7 @@ from ad_rca.agent.models import (
     QuestionAnswer,
     QuestionRequest,
     ReportRequest,
+    validate_report_conclusions,
 )
 
 
@@ -179,6 +180,7 @@ def _validate_plan(plan: InvestigationPlan, request: PlanningRequest) -> None:
 
 def _validate_report(report: InvestigationReport, request: ReportRequest) -> None:
     result = request.result
+    validate_report_conclusions(report, result)
     if result.incident is None:
         raise ValueError("missing incident")
     if report.run_id != request.run_id or report.incident_id != result.incident.incident_id:

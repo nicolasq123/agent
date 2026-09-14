@@ -39,6 +39,10 @@ class QueryApprovalRejected(RuntimeError):
     pass
 
 
+class QueryResultIncomplete(RuntimeError):
+    pass
+
+
 class TerminalQueryApprover:
     def __init__(
         self,
@@ -141,6 +145,19 @@ class ReadonlyMySqlExecutor:
             len(rows),
             _elapsed_ms(started),
         )
+        if len(rows) >= spec.max_result_rows and name not in {
+            "health",
+            "stat_profile",
+            "period_totals",
+            "scope_candidates_by_advertiser",
+            "scope_candidates_by_offer",
+            "scope_candidates_by_channel",
+            "scope_candidates_by_country",
+        }:
+            raise QueryResultIncomplete(
+                f"[QUERY_RESULT_INCOMPLETE] {name} 返回达到上限 {spec.max_result_rows}；"
+                "无法确认完整性，请缩小分析范围"
+            )
         return tuple(rows)
 
     async def check(self) -> None:

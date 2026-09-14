@@ -33,7 +33,11 @@ class TemplateReportComposer:
             ReportConclusion(
                 hypothesis=item.hypothesis,
                 confidence=item.confidence,
-                statement=_conclusion_statement(item.hypothesis.value),
+                statement=(
+                    _conclusion_statement(item.hypothesis.value)
+                    if item.confidence.value == "confirmed"
+                    else f"观察到 {item.hypothesis.value} 的支持证据，尚不能确认因果关系。"
+                ),
                 evidence_ids=tuple(evidence.evidence_id for evidence in item.evidence),
                 explained_loss=item.explained_loss,
             )

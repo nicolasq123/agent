@@ -285,3 +285,37 @@ def test_safe_errors_have_distinct_codes_without_database_details(
 
     assert message.startswith(code)
     assert "database-secret" not in message
+
+
+def test_chat_stays_open_after_query_failure(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    service = FailingNaturalService(_natural_service(tmp_path).analysis)
+    lines = iter(("分析昨天利润", "/exit"))
+    code = main(
+        ["chat"],
+        natural_service_factory=lambda settings: service,
+        line_reader=lambda prompt: next(lines),
+    )
+    assert code == 0
+    assert "DB_TIMEOUT" in capsys.readouterr().err
+
+
+def test_db_profile_outputs_diagnostics_without_credentials(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    from tests.data.test_mysql_snapshot import RecordingReader
+
+    reader = RecordingReader({"stat_profile": ({"source_rows": 100, "non_hour_rows": 0},)})
+
+    def create(url: str, *args: object, **kwargs: object) -> RecordingReader:
+        return reader
+
+    monkeypatch.setenv("MYSQL_STAT_URL", "mysql+asyncmy://readonly:hidden@localhost/db")
+    monkeypatch.setattr("ad_rca.cli.create_mysql_executor", create)
+    assert main(["db-profile"]) == 0
+    output = capsys.readouterr()
+    assert json.loads(output.out)["profile"][0]["source_rows"] == 100
+    assert "hidden" not in output.out + output.err
+    assert reader.calls[0][0] == "stat_profile"

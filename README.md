@@ -114,6 +114,35 @@ enough current data or four comparable historical slots.
 
 ## Database safety
 
+### Reliable totals and diagnostic checks
+
+`make ask QUESTION='分析昨天的收入'` runs a single current-period aggregate SELECT.
+It preserves the requested scope and Decimal amounts, and does not require clicks, historical
+baselines or configuration evidence. Missing rows differ from zero revenue; NULL monetary
+fields block a complete total. These are source-table totals, not a certification of ingestion
+completeness, currency consistency or settlement accounting.
+
+Questions containing reasons, anomalies or declines still use RCA. Its scope discovery is
+bounded and its largest loss path is the verification scope, not proof about every business.
+Reports show gross decreases and offsetting gains separately. Baseline rows use the same
+median-profit historical observations as detection. Cap hits alone neither confirm causality
+nor quantify lost profit. Structured model conclusions cannot increase verified confidence or
+change explained amounts. RCA amounts still use floating point; exact reconciliation uses
+the Decimal summary path.
+
+`make db-profile` (or `make docker-db-profile`) runs a bounded, read-only diagnostic over
+the last seven days of `au_stat.stat`. Check its database/CLI timezones, time coverage,
+non-hour timestamps and missing monetary values before interpreting hourly RCA.
+Table relationships, currencies and late-arrival policies still need cloud-side business
+validation; this diagnostic does not infer them.
+
+`make test-mysql-live` explicitly connects using local settings and tests SQL aggregation over
+100,000 synthetic rows generated inside SELECT derived tables. It never writes tables or
+exports production rows. The default test suite skips this live test.
+
+Detail queries reaching their row cap now fail explicitly; narrow the scope before retrying.
+Chat remains open after a recoverable query error; use `/new` for a new analysis.
+
 Fixture mode is the default. Database infrastructure is optional and strictly read-only:
 
 - The application has no database write, DDL, raw execute, or migration API.

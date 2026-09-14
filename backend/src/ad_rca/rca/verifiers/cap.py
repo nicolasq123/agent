@@ -18,7 +18,7 @@ class CapVerifier:
         )
         if not hits:
             return unknown_result(context, self.hypothesis)
-        loss = context.attribution.lost_profit
+        loss = 0.0
         evidence = make_evidence(
             hypothesis=self.hypothesis,
             strength=EvidenceStrength.DIRECT,
@@ -26,16 +26,16 @@ class CapVerifier:
             dataset="caps",
             record_ids=tuple(hit.record_id for hit in hits),
             statement="Offer reached its configured cap during the incident",
-            formula="attributed_loss_after_cap_hit",
+            formula="cap_hit_observed_loss_not_quantified",
             inputs={"used": float(hits[-1].used), "limit": float(hits[-1].limit)},
             explained_loss=loss,
         )
         return HypothesisResult(
             hypothesis=self.hypothesis,
             status=HypothesisStatus.SUPPORTED,
-            confidence=Confidence.CONFIRMED,
+            confidence=Confidence.LIKELY,
             affected_slice=context.affected_slice,
             explained_loss=loss,
-            explanatory_power=1.0,
+            explanatory_power=0.0,
             evidence=(evidence,),
         )

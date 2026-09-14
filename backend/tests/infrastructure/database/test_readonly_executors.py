@@ -258,3 +258,18 @@ async def test_mysql_check_rejects_an_invalid_health_result() -> None:
 
     with pytest.raises(RuntimeError, match="invalid result"):
         await executor.check()
+
+
+@pytest.mark.anyio
+async def test_mysql_refuses_to_analyze_possibly_truncated_results() -> None:
+    executor = ReadonlyMySqlExecutor(
+        RecordingMySqlClient(),
+        {
+            "detail": QuerySpec(
+                name="detail", dialect="mysql", sql="SELECT 1 LIMIT 1", max_result_rows=1
+            )
+        },
+        auto_query_mode=1,
+    )
+    with pytest.raises(RuntimeError, match="QUERY_RESULT_INCOMPLETE"):
+        await executor.query("detail", {})

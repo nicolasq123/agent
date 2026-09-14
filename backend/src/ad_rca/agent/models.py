@@ -61,3 +61,24 @@ class QuestionAnswer(StrictModel):
     answer: str = Field(min_length=1, max_length=4000)
     evidence_ids: tuple[str, ...] = ()
     generated_without_llm: bool = False
+
+
+def validate_report_conclusions(
+    report: InvestigationReport,
+    result: CoreInvestigationResult,
+) -> None:
+    supported = {
+        item.hypothesis: item for item in result.hypotheses if item.status.value == "supported"
+    }
+    seen: set[str] = set()
+    for conclusion in report.conclusions:
+        hypothesis = supported.get(conclusion.hypothesis)
+        if hypothesis is None or conclusion.hypothesis in seen:
+            raise ValueError("report conclusion is unsupported or duplicated")
+        seen.add(conclusion.hypothesis)
+        if conclusion.confidence != hypothesis.confidence:
+            raise ValueError("report changed verified confidence")
+        if conclusion.explained_loss != hypothesis.explained_loss:
+            raise ValueError("report changed verified loss")
+        if not set(conclusion.evidence_ids) <= {e.evidence_id for e in hypothesis.evidence}:
+            raise ValueError("report cites evidence from a different hypothesis")

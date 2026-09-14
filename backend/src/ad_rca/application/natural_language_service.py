@@ -4,11 +4,11 @@ from typing import Protocol
 from uuid import uuid4
 
 from ad_rca.agent.contracts import IntentParser, InvestigationPlanner, ReportComposer
-from ad_rca.agent.intent import AnalysisIntent
+from ad_rca.agent.intent import AnalysisIntent, AnalysisKind
 from ad_rca.agent.models import InvestigationReport, QuestionAnswer, QuestionRequest
 from ad_rca.application.core_service import CoreRcaService, default_verifiers
 from ad_rca.application.investigation_service import validate_answer_evidence
-from ad_rca.data.mysql_snapshot import LoadedAnalysisSnapshot
+from ad_rca.data.mysql_snapshot import LoadedAnalysisSnapshot, PeriodTotals
 from ad_rca.detection.metrics import aggregate_metrics
 from ad_rca.domain.enums import RunStatus
 from ad_rca.domain.models import CoreInvestigationResult, SliceKey
@@ -23,6 +23,8 @@ class SnapshotLoader(Protocol):
     async def load(self, intent: AnalysisIntent) -> LoadedAnalysisSnapshot: ...
 
     async def check(self) -> None: ...
+
+    async def summarize(self, intent: AnalysisIntent) -> PeriodTotals: ...
 
 
 @dataclass(frozen=True)
@@ -72,6 +74,37 @@ class NaturalLanguageAnalysisService:
             f"时区 {intent.timezone}；请求范围 {intent.scope.model_dump(exclude_none=True)}",
         )
         _notify(progress, "正在读取 MySQL 当前数据和历史基线")
+        if intent.kind is AnalysisKind.SUMMARY:
+            totals = await self._loader.summarize(intent)
+            profit = totals.revenue - totals.payout
+            margin = f"{profit / totals.revenue:.2%}" if totals.revenue else "无法计算"
+            run_id = self._id_factory()
+            report = InvestigationReport(
+                run_id=run_id,
+                incident_id="period-summary",
+                generated_without_llm=True,
+                summary=(
+                    f"本期收入 {totals.revenue}，支出 {totals.payout}，"
+                    f"利润 {profit}，利润率 {margin}。\n"
+                    f"匹配源记录 {totals.source_rows} 行；数据库时间范围 "
+                    f"{totals.first_dt} 至 {totals.last_dt}。\n"
+                    "金额按源表口径汇总，未验证业务入账完整性；本次未执行异常归因。"
+                ),
+            )
+            _notify(progress, "本期汇总完成")
+            return NaturalLanguageAnalysis(
+                intent,
+                intent.scope,
+                WorkflowRun(
+                    run_id=run_id,
+                    rounds=0,
+                    report=report,
+                    events=(),
+                    result=CoreInvestigationResult(
+                        status=RunStatus.COMPLETED, incident=None, residual_loss=0
+                    ),
+                ),
+            )
         snapshot = await self._loader.load(intent)
         _notify(
             progress,

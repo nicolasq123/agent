@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 
 from pydantic import ValidationError
 
-from ad_rca.agent.intent import AnalysisIntent
+from ad_rca.agent.intent import AnalysisIntent, analysis_kind
 from ad_rca.domain.models import SliceKey, StrictModel, TimeWindow
 from ad_rca.infrastructure.models.deepseek import JsonCompletionClient, ModelUnavailableError
 
@@ -56,6 +56,7 @@ class RuleIntentParser:
         _validate_window(window, current)
         return AnalysisIntent(
             question=normalized,
+            kind=analysis_kind(normalized),
             window=window,
             scope=_parse_scope(normalized),
             timezone=self._timezone.key,
@@ -81,6 +82,7 @@ class RuleIntentParser:
             return TimeWindow(start=start, end=end)
         if len(iso_dates) > 2:
             raise IntentParseError("时间范围包含过多日期")
+        question = question.replace("最近一周", "最近7天").replace("最近一天", "最近1天")
         recent = re.search(r"最近\s*(\d+)\s*天", question)
         if recent:
             days = int(recent.group(1))
@@ -146,6 +148,7 @@ class DeepSeekIntentParser:
                 _validate_window(window, current)
                 return AnalysisIntent(
                     question=normalized,
+                    kind=analysis_kind(normalized),
                     window=window,
                     scope=SliceKey(
                         advertiser_id=draft.advertiser_id,

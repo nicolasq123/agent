@@ -4,8 +4,10 @@ import json
 import logging
 import sys
 from collections.abc import Callable, Sequence
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Literal, Protocol
+from zoneinfo import ZoneInfo
 
 import uvicorn
 from fastapi import FastAPI
@@ -27,7 +29,8 @@ from ad_rca.application.scope_discovery import (
 )
 from ad_rca.config import Settings
 from ad_rca.data.fixture_repository import FixtureRepository
-from ad_rca.infrastructure.database.mysql import QueryApprovalRejected
+from ad_rca.infrastructure.database.mysql import QueryApprovalRejected, create_mysql_executor
+from ad_rca.infrastructure.database.mysql_catalog import stat_query_specs
 from ad_rca.infrastructure.database.query_budget import QueryBudgetExceeded
 from ad_rca.infrastructure.models.deepseek import (
     JsonCompletionClient,
@@ -73,7 +76,7 @@ def main(
 ) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
-    if args.command in {"ask", "chat", "db-check"}:
+    if args.command in {"ask", "chat", "db-check", "db-profile"}:
         logging.basicConfig(level=logging.WARNING, format="%(message)s", force=True)
         logging.getLogger("profitlens.sql").setLevel(logging.INFO)
     try:
@@ -104,6 +107,8 @@ def main(
             )
         if args.command == "db-check":
             return _db_check(natural_service_factory or build_natural_language_service)
+        if args.command == "db-profile":
+            return asyncio.run(_db_profile())
     except (
         ValidationError,
         ValueError,
@@ -146,6 +151,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     subparsers.add_parser("chat")
     subparsers.add_parser("db-check")
+    subparsers.add_parser("db-profile")
     return parser
 
 
@@ -261,10 +267,20 @@ async def _chat_loop(
             print("已清除当前分析，请输入新问题。")
             continue
         if analysis is None:
-            analysis = await service.ask(
-                line,
-                progress=lambda message: print(f"[分析] {message}", flush=True),
-            )
+            try:
+                analysis = await service.ask(
+                    line,
+                    progress=lambda message: print(f"[分析] {message}", flush=True),
+                )
+            except (
+                ValueError,
+                RuntimeError,
+                OSError,
+                SQLAlchemyError,
+                ModelUnavailableError,
+            ) as error:
+                print(f"profitlens command failed: {safe_error_message(error)}", file=sys.stderr)
+                continue
             print(render_analysis_markdown(analysis))
         else:
             answer = service.answer(analysis, line)
@@ -277,6 +293,35 @@ def _db_check(factory: NaturalServiceFactory) -> int:
     asyncio.run(factory(Settings()).check_database())
     print("DB20 au_stat: ok")
     print("DB40 ymgw: ok")
+    return 0
+
+
+async def _db_profile() -> int:
+    settings = Settings()
+    if settings.mysql_stat_url is None:
+        raise ValueError("MYSQL_STAT_URL is required")
+    reader = create_mysql_executor(
+        settings.mysql_stat_url.get_secret_value(),
+        stat_query_specs(),
+        auto_query_mode=settings.auto_query_mode,
+    )
+    end = datetime.now(ZoneInfo(settings.stat_timezone)).replace(tzinfo=None)
+    parameters = {"window_start": end - timedelta(days=7), "window_end": end}
+    rows = await reader.query("stat_profile", parameters)
+    print(
+        json.dumps(
+            {
+                "stat_timezone": settings.stat_timezone,
+                "cli_timezone": settings.cli_timezone,
+                "window": parameters,
+                "profile": rows,
+                "note": "仅诊断最近7天的stat；币种、入账完整性及其他表分工需业务核实",
+            },
+            ensure_ascii=False,
+            default=str,
+            indent=2,
+        )
+    )
     return 0
 
 

@@ -1,7 +1,6 @@
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from datetime import datetime, timedelta
-from statistics import median
 from typing import Literal
 
 from ad_rca.application.investigation_case import PreparedInvestigation
@@ -117,6 +116,15 @@ class CoreRcaService:
             min_share=0.10,
         )
         decomposition = decompose_profit_change(current, expected)
+        if not attribution.paths or all(
+            row.advertiser_id == row.offer_id == row.channel_id == row.country == "__all__"
+            for row in current
+        ):
+            return PreparedInvestigation(
+                status=RunStatus.INSUFFICIENT_EVIDENCE,
+                incident=detection.incident,
+                quality=detection.quality,
+            )
         top_slice = attribution.paths[0]
         actual_slice = _filter_rows(current, top_slice.slice_key)
         expected_slice = _filter_rows(expected, top_slice.slice_key)
@@ -162,6 +170,12 @@ class CoreRcaService:
                 residual_loss=prepared.residual_loss,
             )
         if prepared.context is None:
+            if not selected:
+                return CoreInvestigationResult(
+                    status=RunStatus.INSUFFICIENT_EVIDENCE,
+                    incident=prepared.incident,
+                    residual_loss=prepared.residual_loss,
+                )
             raise ValueError("prepared incident is missing verification context")
         selected_tuple = tuple(selected)
         if len(selected_tuple) > 3:
@@ -196,16 +210,24 @@ class CoreRcaService:
 def _expected_rows(
     history: Sequence[PerformanceRow], current_hours: Sequence[datetime]
 ) -> tuple[PerformanceRow, ...]:
-    grouped: dict[tuple[str, str, str, str], list[PerformanceRow]] = defaultdict(list)
-    for row in history:
-        grouped[(row.advertiser_id, row.offer_id, row.channel_id, row.country)].append(row)
     rows: list[PerformanceRow] = []
-    for (advertiser, offer, channel, country), values in grouped.items():
-        for current_hour in current_hours:
-            slots = comparable_history_slots(current_hour, values)
-            if not slots:
-                continue
-            baselines = tuple(aggregate_metrics(slot) for slot in slots)
+    for current_hour in current_hours:
+        slots = sorted(
+            comparable_history_slots(current_hour, history),
+            key=lambda slot: (aggregate_metrics(slot).profit, slot[0].event_hour),
+        )
+        if not slots:
+            continue
+        # Use the same median-profit observations for every leaf and every metric.
+        middle = len(slots) // 2
+        selected = slots[middle : middle + 1] if len(slots) % 2 else slots[middle - 1 : middle + 1]
+        grouped: dict[tuple[str, str, str, str], list[PerformanceRow]] = defaultdict(list)
+        for slot in selected:
+            for row in slot:
+                grouped[(row.advertiser_id, row.offer_id, row.channel_id, row.country)].append(row)
+        for (advertiser, offer, channel, country), values in grouped.items():
+            totals = aggregate_metrics(values)
+            count = len(selected)
             rows.append(
                 PerformanceRow(
                     event_hour=current_hour,
@@ -213,13 +235,11 @@ def _expected_rows(
                     offer_id=offer,
                     channel_id=channel,
                     country=country,
-                    clicks=round(median(row.clicks for row in baselines)),
-                    conversions=round(median(row.conversions for row in baselines)),
-                    approved_conversions=round(
-                        median(row.approved_conversions for row in baselines)
-                    ),
-                    revenue=median(row.revenue for row in baselines),
-                    payout=median(row.payout for row in baselines),
+                    clicks=round(totals.clicks / count),
+                    conversions=round(totals.conversions / count),
+                    approved_conversions=round(totals.approved_conversions / count),
+                    revenue=totals.revenue / count,
+                    payout=totals.payout / count,
                 )
             )
     return tuple(rows)

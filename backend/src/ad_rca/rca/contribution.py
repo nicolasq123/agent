@@ -20,6 +20,8 @@ class AttributionSummary(StrictModel):
     total_loss: float = Field(ge=0)
     explained_loss: float = Field(ge=0)
     residual_loss: float = Field(ge=0)
+    offsetting_gain: float = Field(default=0, ge=0)
+    net_loss: float = 0
     paths: tuple[AttributionResult, ...] = ()
 
 
@@ -54,7 +56,14 @@ def attribute_loss(
     }
     total_loss = sum(leaf_losses.values())
     if total_loss <= 0:
-        return AttributionSummary(total_loss=0.0, explained_loss=0.0, residual_loss=0.0)
+        gain = sum(actual_profit.values()) - sum(expected_profit.values())
+        return AttributionSummary(
+            total_loss=0.0,
+            explained_loss=0.0,
+            residual_loss=0.0,
+            offsetting_gain=max(gain, 0),
+            net_loss=-gain,
+        )
 
     candidates: list[_Candidate] = []
     dimension_tuple = tuple(dimensions)
@@ -105,6 +114,10 @@ def attribute_loss(
     explained_loss = sum(path.lost_profit for path in paths)
     return AttributionSummary(
         total_loss=total_loss,
+        offsetting_gain=sum(
+            max(actual_profit.get(leaf, 0) - expected_profit.get(leaf, 0), 0) for leaf in leaves
+        ),
+        net_loss=sum(expected_profit.values()) - sum(actual_profit.values()),
         explained_loss=explained_loss,
         residual_loss=max(total_loss - explained_loss, 0.0),
         paths=tuple(paths),
