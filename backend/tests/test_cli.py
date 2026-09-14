@@ -313,7 +313,7 @@ def test_db_profile_outputs_diagnostics_without_credentials(
         return reader
 
     monkeypatch.setenv("MYSQL_STAT_URL", "mysql+asyncmy://readonly:hidden@localhost/db")
-    monkeypatch.setattr("ad_rca.cli.create_mysql_executor", create)
+    monkeypatch.setattr("ad_rca.infrastructure.database.backends.create_mysql_executor", create)
     assert main(["db-profile"]) == 0
     output = capsys.readouterr()
     assert json.loads(output.out)["profile"][0]["source_rows"] == 100

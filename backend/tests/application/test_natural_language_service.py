@@ -322,7 +322,9 @@ def test_dependency_builder_shares_one_query_budget(
         created.append((url, budget))
         return EmptyQueryReader()
 
-    monkeypatch.setattr("ad_rca.api.dependencies.create_mysql_executor", fake_create)
+    monkeypatch.setattr(
+        "ad_rca.infrastructure.database.backends.create_mysql_executor", fake_create
+    )
     settings = Settings(
         data_mode="readonly_db",
         model_mode="fake",

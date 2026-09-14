@@ -114,6 +114,57 @@ enough current data or four comparable historical slots.
 
 ## Database safety
 
+### HTTP query plugin
+
+To query a test environment through an existing HTTP gateway instead of connecting to MySQL,
+set these values in `.env` (see `.env.example`):
+
+```dotenv
+DATA_MODE=readonly_db
+QUERY_BACKEND=http
+HTTP_QUERY_URL=http://127.0.0.1/v1/query
+HTTP_QUERY_TOKEN=replace-with-query-service-token
+HTTP_QUERY_STAT_DB=db20
+HTTP_QUERY_CONFIG_DB=db40
+AUTO_QUERY_MODE=0
+```
+
+`MYSQL_STAT_URL` and `MYSQL_CONFIG_URL` are not required in HTTP mode. Set
+`QUERY_BACKEND=mysql` to restore direct connections. Existing `make chat`, `make ask`,
+`make db-check`, `make db-profile`, and Docker targets use the selected plugin.
+`AUTO_QUERY_MODE=1` also applies to HTTP; any other value requires approval before sending.
+
+The plugin sends `POST HTTP_QUERY_URL` with `Authorization: Bearer <token>` and
+`Content-Type: application/json`. Its body is `{"db":"db20","sql":"SELECT ..."}`.
+Only the existing fixed query catalog is exposed to the agent. Bind values are inserted into
+the SQL AST; text values use MySQL hex-to-UTF8 expressions to avoid SQL-mode-dependent quoting.
+The HTTP gateway must execute the received SQL without rewriting its scope or pagination.
+This adds a client transport, not a new arbitrary-SQL HTTP server. The example's `stat_oid`
+does not change the existing `au_stat.stat` source mapping or enable arbitrary SQL input.
+
+Expected successful response (column names must match the requested SQL aliases):
+
+```json
+{"rows":[{"source_rows":12,"revenue_rows":12,"payout_rows":12,"revenue":"123.45","payout":"23.40","first_dt":"2026-09-10 00:00:00","last_dt":"2026-09-10 23:00:00"}]}
+```
+
+`db-check` expects `{"rows":[{"ok":1}]}`. Counts and IDs should be JSON integers or IDs
+as strings; monetary values may be decimal strings or JSON numbers. Temporal fields use ISO
+timestamps (or `YYYY-MM-DD HH:MM:SS`); naive values follow `STAT_TIMEZONE`. A successful empty
+SELECT returns `{"rows":[]}`. Errors should use non-2xx HTTP status codes; `error` or
+`success:false` also signals failure. `truncated`, `has_more`, or `next_cursor` signals an
+incomplete result and is refused. Other response envelopes require an explicit adapter change.
+
+Queries retain their existing timeout (10 seconds), row limits, approval and query budget.
+Responses are capped at 8 MiB. Redirects are not followed. Error messages omit tokens, URLs
+and server response bodies. When running Docker, the configured URL must be reachable from
+the container; existing Docker targets use host networking.
+
+Transport implementations live in `infrastructure/database/`: `backends.py` chooses a client
+implementing the existing `MySqlQueryClient` protocol and wraps it in `ReadonlyMySqlExecutor`.
+Additional transports should plug into that factory and preserve the named query contract,
+approval, validation, budgets and row representation; analysis code needs no transport branches.
+
 ### Reliable totals and diagnostic checks
 
 `make ask QUESTION='分析昨天的收入'` runs a single current-period aggregate SELECT.

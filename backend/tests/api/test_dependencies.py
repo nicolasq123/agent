@@ -36,7 +36,9 @@ def test_natural_language_service_passes_auto_query_mode_to_both_databases(
         observed_modes.append(auto_query_mode)
         return UnusedReader()
 
-    monkeypatch.setattr(dependencies, "create_mysql_executor", create_executor)
+    monkeypatch.setattr(
+        "ad_rca.infrastructure.database.backends.create_mysql_executor", create_executor
+    )
     settings = Settings(
         _env_file=None,  # type: ignore[call-arg]
         data_mode="readonly_db",

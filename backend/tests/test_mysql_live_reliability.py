@@ -14,6 +14,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from ad_rca.config import Settings
+from ad_rca.infrastructure.database.http_query import render_query
 from ad_rca.infrastructure.database.mysql_catalog import stat_query_specs
 
 pytestmark = pytest.mark.skipif(
@@ -56,5 +57,25 @@ async def test_real_mysql_aggregates_more_than_ten_thousand_source_rows() -> Non
             empty = (await connection.execute(text(sql), parameters)).mappings().one()
             assert empty["source_rows"] == 0
             assert empty["revenue"] is None
+    finally:
+        await engine.dispose()
+
+
+@pytest.mark.anyio
+async def test_http_sql_parameter_encoding_roundtrips_on_real_mysql() -> None:
+    settings = Settings()
+    assert settings.mysql_stat_url is not None
+    engine = create_async_engine(settings.mysql_stat_url.get_secret_value())
+    payload = "US\\'; DROP TABLE stat; -- 中文"
+    query = render_query(
+        "SELECT :value AS payload, :empty AS n, :number AS i LIMIT 1",
+        {"value": payload, "empty": None, "number": -1},
+    )
+    try:
+        async with engine.connect() as connection:
+            result = (await connection.execute(text(query))).mappings().one()
+            assert result["payload"] == payload
+            assert result["n"] is None
+            assert result["i"] == -1
     finally:
         await engine.dispose()

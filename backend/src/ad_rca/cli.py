@@ -29,7 +29,8 @@ from ad_rca.application.scope_discovery import (
 )
 from ad_rca.config import Settings
 from ad_rca.data.fixture_repository import FixtureRepository
-from ad_rca.infrastructure.database.mysql import QueryApprovalRejected, create_mysql_executor
+from ad_rca.infrastructure.database.backends import create_query_executor
+from ad_rca.infrastructure.database.mysql import QueryApprovalRejected
 from ad_rca.infrastructure.database.mysql_catalog import stat_query_specs
 from ad_rca.infrastructure.database.query_budget import QueryBudgetExceeded
 from ad_rca.infrastructure.models.deepseek import (
@@ -298,13 +299,7 @@ def _db_check(factory: NaturalServiceFactory) -> int:
 
 async def _db_profile() -> int:
     settings = Settings()
-    if settings.mysql_stat_url is None:
-        raise ValueError("MYSQL_STAT_URL is required")
-    reader = create_mysql_executor(
-        settings.mysql_stat_url.get_secret_value(),
-        stat_query_specs(),
-        auto_query_mode=settings.auto_query_mode,
-    )
+    reader = create_query_executor(settings, "stat", stat_query_specs())
     end = datetime.now(ZoneInfo(settings.stat_timezone)).replace(tzinfo=None)
     parameters = {"window_start": end - timedelta(days=7), "window_end": end}
     rows = await reader.query("stat_profile", parameters)

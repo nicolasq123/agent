@@ -73,7 +73,7 @@ class NaturalLanguageAnalysisService:
             f"分析窗口 {intent.window.start.isoformat()} 至 {intent.window.end.isoformat()}；"
             f"时区 {intent.timezone}；请求范围 {intent.scope.model_dump(exclude_none=True)}",
         )
-        _notify(progress, "正在读取 MySQL 当前数据和历史基线")
+        _notify(progress, "正在读取当前数据和历史基线")
         if intent.kind is AnalysisKind.SUMMARY:
             totals = await self._loader.summarize(intent)
             profit = totals.revenue - totals.payout
@@ -108,7 +108,7 @@ class NaturalLanguageAnalysisService:
         snapshot = await self._loader.load(intent)
         _notify(
             progress,
-            f"MySQL 读取完成；分析范围 {snapshot.selected_scope.model_dump(exclude_none=True)}；"
+            f"数据读取完成；分析范围 {snapshot.selected_scope.model_dump(exclude_none=True)}；"
             f"性能数据 {len(snapshot.repository.all_performance())} 行",
         )
         _notify(progress, "正在检测异常并计算利润损失")

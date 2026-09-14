@@ -1067,6 +1067,7 @@ dependencies = [
     { name = "asyncmy" },
     { name = "clickhouse-connect" },
     { name = "fastapi" },
+    { name = "httpx" },
     { name = "langgraph" },
     { name = "numpy" },
     { name = "openai" },
@@ -1080,7 +1081,6 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "httpx" },
     { name = "pyright" },
     { name = "pytest" },
     { name = "pytest-cov" },
@@ -1092,6 +1092,7 @@ requires-dist = [
     { name = "asyncmy", specifier = ">=0.2,<1" },
     { name = "clickhouse-connect", specifier = ">=0.8,<1" },
     { name = "fastapi", specifier = ">=0.116,<1" },
+    { name = "httpx", specifier = ">=0.28,<1" },
     { name = "langgraph", specifier = ">=1,<2" },
     { name = "numpy", specifier = ">=2.2,<3" },
     { name = "openai", specifier = ">=2,<3" },
@@ -1105,7 +1106,6 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "httpx", specifier = ">=0.28,<1" },
     { name = "pyright", specifier = ">=1.1.400,<2" },
     { name = "pytest", specifier = ">=8.4,<9" },
     { name = "pytest-cov", specifier = ">=6.2,<7" },
